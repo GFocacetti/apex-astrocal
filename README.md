@@ -47,7 +47,7 @@ L'app sarà disponibile su `http://localhost:3000`.
 
 ## Eseguibile Windows
 
-### ⬇️ [Scarica Apex per Windows](https://github.com/GFocacetti/apex-astrocal/releases/latest/download/Apex.exe)
+### ⬇️ [Scarica Apex per Windows](https://github.com/GFocacetti/apex-astrocal/releases/download/v0.6.3-alpha/Apex.exe)
 
 Un singolo file `.exe` **portable**: nessuna installazione, nessuna compilazione richiesta — si scarica e si avvia direttamente. Il link punta sempre all'ultima versione pubblicata. In alternativa è disponibile anche un installer tradizionale (`Apex-Setup.exe`) nella pagina [Releases](https://github.com/GFocacetti/apex-astrocal/releases).
 
