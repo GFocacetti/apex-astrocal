@@ -58,13 +58,19 @@ L'app sarà disponibile su `http://localhost:3000`.
 
 ## Eseguibile Windows
 
-### ⬇️ [Scarica Apex per Windows](https://github.com/GFocacetti/apex-astrocal/releases/download/v0.7.0-alpha/Apex.exe)
+### ⬇️ [Scarica Apex per Windows](https://github.com/GFocacetti/apex-astrocal/releases/download/v0.7.0-alpha/Apex-0.7.0-alpha-win-x64.zip)
 
-Un singolo file `.exe` **portable**: nessuna installazione, nessuna compilazione richiesta — si scarica e si avvia direttamente. Il link punta sempre all'ultima versione pubblicata. In alternativa è disponibile anche un installer tradizionale (`Apex-Setup.exe`) nella pagina [Releases](https://github.com/GFocacetti/apex-astrocal/releases).
+Un archivio **portable**: nessuna installazione e nessuna compilazione richiesta. Scompatta lo ZIP dove preferisci e avvia `Apex.exe`. In alternativa, nella pagina [Releases](https://github.com/GFocacetti/apex-astrocal/releases) trovi anche l'installer tradizionale `Apex-Setup-<versione>.exe`.
 
 ### "Windows ha protetto il PC"
 
-Al primo avvio, Windows SmartScreen mostra un avviso perché l'eseguibile non è firmato con un certificato a pagamento (normale per software indipendente/alpha, non un problema del codice). Per procedere: click su **"Ulteriori informazioni"**, poi **"Esegui comunque"**.
+Al primo avvio Windows SmartScreen mostra un avviso perché l'eseguibile non è firmato con un certificato a pagamento: è normale per software indipendente e non indica un problema del codice. Per procedere: **"Ulteriori informazioni"** → **"Esegui comunque"**.
+
+### Se l'antivirus segnala il download
+
+Può capitare che Windows Defender segnali un file appena pubblicato con un avviso generico del tipo `Wacatac.B!ml`. Il suffisso `!ml` indica un verdetto **euristico** del modello di machine learning, non il riconoscimento di codice malevolo noto: si attiva tipicamente su eseguibili non firmati e senza ancora una reputazione, cioè scaricati da pochissime persone.
+
+Per ridurre il problema la distribuzione portable è un archivio ZIP invece di un eseguibile auto-estraente, che era la causa principale delle segnalazioni. Se ne ricevi comunque una puoi verificare tu stesso il file caricandolo su [VirusTotal](https://www.virustotal.com/), che lo analizza con decine di motori diversi.
 
 ## Licenza
 
