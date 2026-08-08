@@ -56,6 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         { id: 'simLrgbOsc', label: 'LRGB vs OSC' },
         { id: 'simCollimation', label: 'Collimazione' },
         { id: 'simBackfocus', label: 'Backfocus' },
+        { id: 'simPolarAlign', label: 'Allineamento Polare' },
       ],
     },
     {
