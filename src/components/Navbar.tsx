@@ -57,6 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         { id: 'simCollimation', label: 'Collimazione' },
         { id: 'simBackfocus', label: 'Backfocus' },
         { id: 'simPolarAlign', label: 'Allineamento Polare' },
+        { id: 'simGuiding', label: 'Autoguida' },
       ],
     },
     {

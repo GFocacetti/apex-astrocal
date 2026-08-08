@@ -20,6 +20,7 @@ import { TabSimulatorLrgbOsc } from './components/TabSimulatorLrgbOsc';
 import { TabSimulatorCollimation } from './components/TabSimulatorCollimation';
 import { TabSimulatorBackfocus } from './components/TabSimulatorBackfocus';
 import { TabSimulatorPolarAlign } from './components/TabSimulatorPolarAlign';
+import { TabSimulatorGuiding } from './components/TabSimulatorGuiding';
 
 export default function App() {
   // Initial location/year/tab restored from localStorage (fallback: Roma, Italia)
@@ -114,6 +115,8 @@ export default function App() {
         {activeTab === 'simBackfocus' && <TabSimulatorBackfocus />}
 
         {activeTab === 'simPolarAlign' && <TabSimulatorPolarAlign location={location} />}
+
+        {activeTab === 'simGuiding' && <TabSimulatorGuiding />}
       </main>
 
       {/* Footer */}
