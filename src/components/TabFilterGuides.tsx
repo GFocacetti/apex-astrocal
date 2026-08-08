@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, Sparkles, BookOpen, Info } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { ApexIcon } from './ApexIcon';
 
 interface TabFilterGuidesProps {
   section: 'visual' | 'imaging';
@@ -11,6 +12,9 @@ export const TabFilterGuides: React.FC<TabFilterGuidesProps> = ({ section }) => 
     <div className="space-y-8 text-slate-100">
       {/* Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
+          <ApexIcon className="w-32 h-32" />
+        </div>
         <div className="relative z-10 max-w-3xl">
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
             <BookOpen className="w-4 h-4" />

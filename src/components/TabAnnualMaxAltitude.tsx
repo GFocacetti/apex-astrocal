@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { UserLocation, AnnualPlanetSummary, PlanetKey, InnerPlanetDayPoint } from '../types';
 import {
   calculateAnnualPlanetSummaries,
   calculateInnerPlanetVisibility,
+  calculateMonthlyAngularDiameters,
   PLANETS_INFO,
   MONTH_NAMES_IT,
 } from '../services/astroEngine';
@@ -12,13 +13,15 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   CartesianGrid,
   ReferenceArea,
   ReferenceLine,
 } from 'recharts';
-import { Eye, Info, Sparkles, Compass, ChevronLeft, ChevronRight, Sunrise, Sunset } from 'lucide-react';
+import { Eye, Info, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Sunrise, Sunset } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { ApexIcon } from './ApexIcon';
 
 function isInnerPlanet(key: PlanetKey): key is 'Mercury' | 'Venus' {
   return key === 'Mercury' || key === 'Venus';
@@ -63,13 +66,24 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
     return calculateAnnualPlanetSummaries(selectedYear, location);
   }, [selectedYear, location]);
 
-  const [selectedPlanetKey, setSelectedPlanetKey] = useState<PlanetKey>('Jupiter');
+  const [selectedPlanetKey, setSelectedPlanetKey] = useState<PlanetKey | null>(null);
+
+  const [planetMenuOpen, setPlanetMenuOpen] = useState(false);
+  const planetMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (planetMenuRef.current && !planetMenuRef.current.contains(e.target as Node)) {
+        setPlanetMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const selectedSummary = useMemo(() => {
-    return (
-      summaries.find((s) => s.planetKey === selectedPlanetKey) ||
-      summaries[0]
-    );
+    if (!selectedPlanetKey) return null;
+    return summaries.find((s) => s.planetKey === selectedPlanetKey) ?? null;
   }, [summaries, selectedPlanetKey]);
 
   const innerVisibility = useMemo(() => {
@@ -77,6 +91,41 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
     return calculateInnerPlanetVisibility(selectedSummary.planetKey, selectedYear, location);
   }, [selectedSummary, selectedYear, location]);
 
+  const selectedDiamRatio = useMemo(() => {
+    if (!selectedSummary?.angularDiameterArcsec || !selectedSummary.angularDiameterMaxArcsec) return null;
+    return Math.round((selectedSummary.angularDiameterArcsec / selectedSummary.angularDiameterMaxArcsec) * 100);
+  }, [selectedSummary]);
+
+  // Apparent diameter sampled month-by-month, plotted as a second line on the chart.
+  const monthlyDiameterData = useMemo(() => {
+    if (!selectedSummary) return null;
+    return calculateMonthlyAngularDiameters(selectedSummary.planetKey, selectedYear);
+  }, [selectedSummary, selectedYear]);
+
+  // Merged altitude + diameter dataset for the monthly (categorical) chart: a
+  // single shared `data` array is required so the two Lines land on the same
+  // 12 month categories instead of Recharts appending a second set of ticks.
+  const monthlyChartData = useMemo(() => {
+    if (!selectedSummary) return [];
+    return selectedSummary.monthlyData.map((m, idx) => ({
+      ...m,
+      angularDiameterArcsec: monthlyDiameterData?.[idx]?.angularDiameterArcsec,
+    }));
+  }, [selectedSummary, monthlyDiameterData]);
+
+  // Position of "today" on the chart, only when browsing the current calendar year.
+  const todayMarker = useMemo(() => {
+    const now = new Date();
+    if (now.getFullYear() !== selectedYear) return null;
+    const dayIndex = Math.round(
+      (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12) - Date.UTC(selectedYear, 0, 1, 12)) / 86400000
+    );
+    return { dayIndex, monthName: MONTH_NAMES_IT[now.getMonth()].slice(0, 3) };
+  }, [selectedYear]);
+
+  // innerVisibility.points already carries a per-day angularDiameterArcsec, so the
+  // altitude and diameter series share this exact same array - required for Recharts
+  // to track a single, consistent hover index on the numeric day-axis.
   const dailyChartData = useMemo(() => {
     if (!innerVisibility) return [];
     return innerVisibility.points.map((p) => ({
@@ -119,20 +168,90 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
     <div className="space-y-8 text-slate-100">
       {/* Overview Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-10 text-indigo-400 pointer-events-none">
-          <Compass className="w-48 h-48" />
+        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
+          <ApexIcon className="w-32 h-32" />
         </div>
         <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Altezza Massima di Culminazione dell'Anno {selectedYear}
-          </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Passaggio al Meridiano & Culmine per {location.name}
+            Calcola l'altezza massima dei pianeti per le tue osservazioni
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
             I pianeti raggiungono la loro massima altezza sull'orizzonte e la migliore nitidezza atmosferica quando attraversano il meridiano del tuo luogo di osservazione (Latitudine {location.latitude.toFixed(2)}°). Minore è la massa d'aria traversata, minore sarà la turbolenza (seeing).
           </p>
+        </div>
+      </div>
+
+      {/* Solar System Body Selector - placed right below the intro card */}
+      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl">
+        <label className="text-base font-semibold text-slate-300 mb-2 flex items-center gap-2">
+          <Eye className="w-5 h-5 text-cyan-400" />
+          Scegli un corpo del sistema solare
+        </label>
+        <div className="relative w-full max-w-md" ref={planetMenuRef}>
+          <button
+            type="button"
+            onClick={() => setPlanetMenuOpen((open) => !open)}
+            className={`w-full flex items-center justify-between gap-3 pl-2.5 pr-4 py-2.5 rounded-xl border bg-slate-950 transition-all ${
+              planetMenuOpen
+                ? 'border-amber-500/60 ring-1 ring-amber-500/30'
+                : 'border-slate-700 hover:border-slate-600'
+            }`}
+          >
+            {selectedPlanetKey ? (
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg shadow-inner shrink-0"
+                  style={{
+                    backgroundColor: `${PLANETS_INFO[selectedPlanetKey].color}20`,
+                    color: PLANETS_INFO[selectedPlanetKey].color,
+                  }}
+                >
+                  {PLANETS_INFO[selectedPlanetKey].symbol}
+                </div>
+                <span className="font-bold text-base text-amber-300 truncate">
+                  {PLANETS_INFO[selectedPlanetKey].nameIt}
+                </span>
+              </div>
+            ) : (
+              <span className="text-slate-400">Seleziona...</span>
+            )}
+            <ChevronDown
+              className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${
+                planetMenuOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {planetMenuOpen && (
+            <div className="absolute z-20 mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-y-auto max-h-80">
+              {summaries.map((s) => {
+                const info = PLANETS_INFO[s.planetKey];
+                const isSel = s.planetKey === selectedPlanetKey;
+                return (
+                  <div
+                    key={s.planetKey}
+                    onClick={() => {
+                      setSelectedPlanetKey(s.planetKey);
+                      setPlanetMenuOpen(false);
+                    }}
+                    className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
+                      isSel ? 'bg-amber-500/10' : 'hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg shadow-inner shrink-0"
+                      style={{ backgroundColor: `${info.color}20`, color: info.color }}
+                    >
+                      {info.symbol}
+                    </div>
+                    <span className={`font-semibold text-sm ${isSel ? 'text-amber-300' : 'text-slate-100'}`}>
+                      {s.nameIt}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -161,113 +280,99 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
         </button>
       </div>
 
-      {/* Planet Selection Grid */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-            <Eye className="w-4 h-4 text-cyan-400" />
-            Schede Dettagliate dei Pianeti (Clicca per selezionare)
-          </h3>
-          <span className="text-xs text-slate-400">Anno {selectedYear}</span>
-        </div>
+      {/* Planet Data Table - appears only after a body has been chosen above */}
+      {selectedSummary && (
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+            <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <Eye className="w-4 h-4 text-cyan-400" />
+              Dati del corpo del sistema solare
+            </h3>
+            <span className="text-xs text-slate-400">
+              {location.name} · Anno {selectedYear}
+            </span>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {summaries.map((summary) => {
-            const isSelected = summary.planetKey === selectedPlanetKey;
-            const info = PLANETS_INFO[summary.planetKey];
-
-            return (
-              <div
-                key={summary.planetKey}
-                onClick={() => setSelectedPlanetKey(summary.planetKey)}
-                className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
-                  isSelected
-                    ? 'bg-slate-900/90 border-amber-500/60 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30'
-                    : 'bg-slate-900/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg shadow-inner shrink-0"
-                      style={{ backgroundColor: `${info.color}20`, color: info.color }}
-                    >
-                      {info.symbol}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-100 group-hover:text-amber-300 transition">
-                        {summary.nameIt}
-                      </h4>
-                      <p className="text-[11px] text-slate-400">
-                        Apex: {summary.peakDate}
-                      </p>
-                    </div>
-                  </div>
+          <table className="w-full text-sm">
+            <tbody>
+              <tr className="border-b border-slate-800/80">
+                <td className="px-4 py-3 text-slate-400 w-2/5">
+                  {innerVisibility ? 'Apex (Migliore Finestra)' : 'Apex (Data e Ora Culmine)'}
+                </td>
+                <td className="px-4 py-3 font-semibold text-slate-100">
+                  {selectedSummary.peakDate}
+                  {!innerVisibility && selectedSummary.peakTransitTime ? ` · ${selectedSummary.peakTransitTime}` : ''}
+                </td>
+              </tr>
+              <tr className="border-b border-slate-800/80">
+                <td className="px-4 py-3 text-slate-400">Altezza Massima</td>
+                <td className="px-4 py-3 font-bold text-amber-400">{selectedSummary.peakAltitude}°</td>
+              </tr>
+              {selectedSummary.angularDiameterArcsec !== undefined && (
+                <tr className="border-b border-slate-800/80">
+                  <td className="px-4 py-3 text-slate-400">Diametro Apparente</td>
+                  <td className="px-4 py-3 font-semibold text-cyan-300">
+                    {selectedSummary.angularDiameterArcsec}″
+                    {selectedSummary.angularDiameterMaxArcsec !== undefined && selectedDiamRatio !== null && (
+                      <span className="text-slate-400 font-normal">
+                        {' '}
+                        (massimo {selectedSummary.angularDiameterMaxArcsec}″{' '}
+                        {PLANETS_INFO[selectedSummary.planetKey].type === 'planet_inner'
+                          ? 'alla congiunzione inferiore'
+                          : "all'opposizione"}
+                        , {selectedDiamRatio}% del massimo)
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              )}
+              <tr>
+                <td className="px-4 py-3 text-slate-400">Qualità di Osservazione</td>
+                <td className="px-4 py-3">
                   <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${getQualityBadgeClass(
-                      summary.quality
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getQualityBadgeClass(
+                      selectedSummary.quality
                     )}`}
                   >
-                    {summary.quality}
+                    {selectedSummary.quality}
                   </span>
-                </div>
-
-                <div className="mt-4 flex items-baseline justify-between border-t border-slate-800/80 pt-3">
-                  <div className="text-xs text-slate-400">Altezza Massima</div>
-                  <div className="text-xl font-extrabold text-amber-400">
-                    {summary.peakAltitude}°
-                  </div>
-                </div>
-
-                <p className="mt-2 text-xs text-slate-300 leading-relaxed min-h-[4.5rem]">
-                  {summary.description}
-                </p>
-              </div>
-            );
-          })}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
 
-      {/* Selected Planet Monthly Progression Detail */}
+      {/* Selected Planet Detail (appears once a body has been chosen above) */}
       {selectedSummary && (
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-md"
-                style={{
-                  backgroundColor: `${PLANETS_INFO[selectedSummary.planetKey].color}25`,
-                  color: PLANETS_INFO[selectedSummary.planetKey].color,
-                }}
-              >
-                {PLANETS_INFO[selectedSummary.planetKey].symbol}
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-100">
-                  {innerVisibility
-                    ? `Profilo Giornaliero di Visibilità: ${selectedSummary.nameIt} (${selectedYear})`
-                    : `Profilo Mensile Culminazione: ${selectedSummary.nameIt} (${selectedYear})`}
-                </h3>
-                <p className="text-xs text-slate-400">
-                  {innerVisibility
-                    ? `Altezza al crepuscolo (alba o tramonto) giorno per giorno da ${location.name}`
-                    : `Andamento dell'altezza massima raggiungibile mese per mese, a cielo scuro, da ${location.name}`}
-                </p>
-              </div>
+          <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-md"
+              style={{
+                backgroundColor: `${PLANETS_INFO[selectedSummary.planetKey].color}25`,
+                color: PLANETS_INFO[selectedSummary.planetKey].color,
+              }}
+            >
+              {PLANETS_INFO[selectedSummary.planetKey].symbol}
             </div>
-
-            <div className="flex items-center gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-              <div>
-                <div className="text-slate-400">Picco dell'Anno</div>
-                <div className="text-sm font-bold text-amber-400">{selectedSummary.peakAltitude}°</div>
-              </div>
-              <div className="h-6 w-px bg-slate-800" />
-              <div>
-                <div className="text-slate-400">{innerVisibility ? 'Migliore Finestra' : 'Data e Ora Culmine'}</div>
-                <div className="text-sm font-semibold text-slate-200">{selectedSummary.peakDate}</div>
-              </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-100">
+                {innerVisibility
+                  ? `Profilo Giornaliero di Visibilità: ${selectedSummary.nameIt} (${selectedYear})`
+                  : `Profilo Mensile Culminazione: ${selectedSummary.nameIt} (${selectedYear})`}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {innerVisibility
+                  ? `Altezza al crepuscolo (alba o tramonto) e diametro apparente giorno per giorno da ${location.name}`
+                  : `Andamento dell'altezza massima e del diametro apparente mese per mese, a cielo scuro, da ${location.name}`}
+              </p>
             </div>
           </div>
+
+          <p className="text-sm text-slate-300 leading-relaxed">
+            {selectedSummary.description}
+          </p>
 
           {/* Chart: daily elongation/twilight profile for Mercury & Venus, monthly culmination for everything else */}
           <div className="h-60 sm:h-64 w-full">
@@ -278,6 +383,7 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
                   {favorabilityBands.map((band, idx) => (
                     <ReferenceArea
                       key={idx}
+                      yAxisId="alt"
                       x1={band.start}
                       x2={band.end}
                       stroke="none"
@@ -285,7 +391,16 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
                       fillOpacity={0.1}
                     />
                   ))}
-                  <ReferenceLine y={0} stroke="#64748b" strokeDasharray="2 2" />
+                  <ReferenceLine yAxisId="alt" y={0} stroke="#64748b" strokeDasharray="2 2" />
+                  {todayMarker && (
+                    <ReferenceLine
+                      yAxisId="alt"
+                      x={todayMarker.dayIndex}
+                      stroke="#f43f5e"
+                      strokeDasharray="4 4"
+                      label={{ value: 'Oggi', position: 'insideTopLeft', fill: '#f43f5e', fontSize: 10 }}
+                    />
+                  )}
                   <XAxis
                     dataKey="dayIndex"
                     type="number"
@@ -295,11 +410,23 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
                     stroke="#94a3b8"
                     fontSize={11}
                   />
-                  <YAxis stroke="#94a3b8" fontSize={11} domain={[-25, 60]} unit="°" />
+                  <YAxis yAxisId="alt" stroke="#94a3b8" fontSize={11} domain={[-25, 60]} unit="°" />
+                  <YAxis
+                    yAxisId="diam"
+                    orientation="right"
+                    stroke="#22d3ee"
+                    fontSize={11}
+                    unit="″"
+                    domain={[0, (max: number) => Math.ceil(max * 1.2)]}
+                  />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
-                        const d = payload[0].payload as InnerPlanetDayPoint;
+                        const d = payload.find((p) => p.dataKey === 'altitudeDisplay')?.payload as
+                          | InnerPlanetDayPoint
+                          | undefined;
+                        const diam = payload.find((p) => p.dataKey === 'angularDiameterArcsec');
+                        if (!d) return null;
                         return (
                           <div className="bg-slate-950 border border-slate-700 p-2.5 rounded-lg text-xs space-y-1">
                             <div className="font-bold text-amber-300">{d.dateStr}</div>
@@ -319,6 +446,12 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
                             <div>
                               Elongazione dal Sole: <span className="font-bold text-white">{d.elongation}°</span>
                             </div>
+                            {diam !== undefined && (
+                              <div>
+                                Diametro apparente:{' '}
+                                <span className="font-bold text-cyan-300">{diam.value}″</span>
+                              </div>
+                            )}
                             <div className={d.favorable ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
                               {d.favorable ? 'Periodo favorevole' : 'Poco favorevole / non osservabile'}
                             </div>
@@ -328,43 +461,99 @@ export const TabAnnualMaxAltitude: React.FC<TabAnnualMaxAltitudeProps> = ({
                       return null;
                     }}
                   />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Line
+                    yAxisId="alt"
                     type="monotone"
                     dataKey="altitudeDisplay"
+                    name="Altezza al crepuscolo (°)"
                     stroke={PLANETS_INFO[selectedSummary.planetKey].color}
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 5 }}
                     isAnimationActive={false}
                   />
+                  {selectedSummary.angularDiameterArcsec !== undefined && (
+                    <Line
+                      yAxisId="diam"
+                      type="monotone"
+                      dataKey="angularDiameterArcsec"
+                      name="Diametro Apparente (″)"
+                      stroke="#22d3ee"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                      isAnimationActive={false}
+                    />
+                  )}
                 </LineChart>
               ) : (
-                <LineChart data={selectedSummary.monthlyData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                <LineChart data={monthlyChartData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+                  {todayMarker && (
+                    <ReferenceLine
+                      yAxisId="alt"
+                      x={todayMarker.monthName}
+                      stroke="#f43f5e"
+                      strokeDasharray="4 4"
+                      label={{ value: 'Oggi', position: 'insideTopLeft', fill: '#f43f5e', fontSize: 10 }}
+                    />
+                  )}
                   <XAxis dataKey="monthName" stroke="#94a3b8" fontSize={11} />
-                  <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 90]} unit="°" />
+                  <YAxis yAxisId="alt" stroke="#94a3b8" fontSize={11} domain={[0, 90]} unit="°" />
+                  <YAxis
+                    yAxisId="diam"
+                    orientation="right"
+                    stroke="#22d3ee"
+                    fontSize={11}
+                    unit="″"
+                    domain={[0, (max: number) => Math.ceil(max * 1.2)]}
+                  />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
-                        const d = payload[0].payload;
+                        const altEntry = payload.find((p) => p.dataKey === 'altitude');
+                        const diam = payload.find((p) => p.dataKey === 'angularDiameterArcsec');
+                        const monthLabel = (altEntry?.payload ?? diam?.payload)?.monthName;
                         return (
-                          <div className="bg-slate-950 border border-slate-700 p-2.5 rounded-lg text-xs">
-                            <div className="font-bold text-amber-300">{d.monthName} {selectedYear}</div>
-                            <div>Altezza al culmine: <span className="font-bold text-white">{d.altitude}°</span></div>
+                          <div className="bg-slate-950 border border-slate-700 p-2.5 rounded-lg text-xs space-y-1">
+                            <div className="font-bold text-amber-300">{monthLabel} {selectedYear}</div>
+                            {altEntry !== undefined && (
+                              <div>Altezza al culmine: <span className="font-bold text-white">{altEntry.value}°</span></div>
+                            )}
+                            {diam !== undefined && (
+                              <div>Diametro apparente: <span className="font-bold text-cyan-300">{diam.value}″</span></div>
+                            )}
                           </div>
                         );
                       }
                       return null;
                     }}
                   />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Line
+                    yAxisId="alt"
                     type="monotone"
                     dataKey="altitude"
+                    name="Altezza al culmine (°)"
                     stroke={PLANETS_INFO[selectedSummary.planetKey].color}
                     strokeWidth={3}
                     dot={{ r: 4, fill: '#f59e0b' }}
                     activeDot={{ r: 6 }}
                   />
+                  {monthlyDiameterData && (
+                    <Line
+                      yAxisId="diam"
+                      type="monotone"
+                      dataKey="angularDiameterArcsec"
+                      name="Diametro Apparente (″)"
+                      stroke="#22d3ee"
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: '#22d3ee' }}
+                      activeDot={{ r: 5 }}
+                      isAnimationActive={false}
+                    />
+                  )}
                 </LineChart>
               )}
             </ResponsiveContainer>

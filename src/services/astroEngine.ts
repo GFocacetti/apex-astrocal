@@ -278,6 +278,17 @@ export function calculateInnerPlanetVisibility(
       altitudeAtTwilight >= INNER_PLANET_FAVORABLE_MIN_ALTITUDE_DEG &&
       elong.elongation >= INNER_PLANET_FAVORABLE_MIN_ELONGATION_DEG;
 
+    let angularDiameterArcsec: number | undefined;
+    const diamConst = ANGULAR_DIAM_AT_1AU[planetKey];
+    if (diamConst) {
+      try {
+        const illum = Astronomy.Illumination(body, t);
+        angularDiameterArcsec = Number((diamConst / illum.geo_dist).toFixed(1));
+      } catch {
+        // Skip if illumination can't be computed for this date
+      }
+    }
+
     const point: InnerPlanetDayPoint = {
       dateStr: date.toISOString().split('T')[0],
       dayIndex: d,
@@ -286,6 +297,7 @@ export function calculateInnerPlanetVisibility(
       altitudeAtTwilight: Number(altitudeAtTwilight.toFixed(1)),
       twilightTimeStr,
       favorable,
+      angularDiameterArcsec,
     };
     points.push(point);
 
@@ -295,6 +307,85 @@ export function calculateInnerPlanetVisibility(
   }
 
   return { planetKey, year, points, bestPoint };
+}
+
+// Apparent diameter each planet would have at a hypothetical distance of 1 AU
+// from Earth, in arcseconds (2 * equatorial radius / 1 AU, converted to arcsec).
+// Actual diameter at distance d (AU) = this constant / d.
+const ANGULAR_DIAM_AT_1AU: Partial<Record<PlanetKey, number>> = {
+  Mercury: 6.74,
+  Venus: 16.68,
+  Mars: 9.36,
+  Jupiter: 196.94,
+  Saturn: 165.6,
+  Uranus: 70.5,
+  Neptune: 68.3,
+};
+
+// Typical maximum apparent diameter reached: at opposition for outer planets,
+// at inferior conjunction for Mercury/Venus. Used as a reference ceiling.
+const ANGULAR_DIAM_MAX: Partial<Record<PlanetKey, number>> = {
+  Mercury: 12,
+  Venus: 66,
+  Mars: 25,
+  Jupiter: 50,
+  Saturn: 20,
+  Uranus: 4,
+  Neptune: 2.4,
+};
+
+function computeAngularDiameter(
+  key: PlanetKey,
+  astroBody: Astronomy.Body,
+  dateStr: string
+): { angularDiameterArcsec?: number; angularDiameterMaxArcsec?: number } {
+  const diamConst = ANGULAR_DIAM_AT_1AU[key];
+  if (!diamConst) return {};
+  try {
+    const illum = Astronomy.Illumination(astroBody, Astronomy.MakeTime(new Date(dateStr + 'T12:00:00Z')));
+    return {
+      angularDiameterArcsec: Number((diamConst / illum.geo_dist).toFixed(1)),
+      angularDiameterMaxArcsec: ANGULAR_DIAM_MAX[key],
+    };
+  } catch (e) {
+    return {};
+  }
+}
+
+export interface MonthlyDiameterPoint {
+  monthName: string;
+  dayIndex: number; // 0-based day-of-year of the 15th of the month, for chart x-axis alignment
+  angularDiameterArcsec: number;
+}
+
+/**
+ * Apparent diameter sampled on the 15th of each month of `year`, for charting
+ * alongside altitude. Returns null for bodies without a defined physical
+ * radius constant (Sun, Moon).
+ */
+export function calculateMonthlyAngularDiameters(key: PlanetKey, year: number): MonthlyDiameterPoint[] | null {
+  const diamConst = ANGULAR_DIAM_AT_1AU[key];
+  if (!diamConst) return null;
+  const astroBody = key as Astronomy.Body;
+  const points: MonthlyDiameterPoint[] = [];
+
+  for (let month = 0; month < 12; month++) {
+    const sampleDate = new Date(Date.UTC(year, month, 15, 12, 0, 0));
+    const dayIndex = Math.round(
+      (sampleDate.getTime() - Date.UTC(year, 0, 1, 12, 0, 0)) / 86400000
+    );
+    try {
+      const illum = Astronomy.Illumination(astroBody, Astronomy.MakeTime(sampleDate));
+      points.push({
+        monthName: MONTH_NAMES_IT[month].slice(0, 3),
+        dayIndex,
+        angularDiameterArcsec: Number((diamConst / illum.geo_dist).toFixed(1)),
+      });
+    } catch (e) {
+      // Skip months outside the engine's valid date range
+    }
+  }
+  return points;
 }
 
 /**
@@ -362,6 +453,7 @@ export function calculateAnnualPlanetSummaries(
         quality,
         monthlyData,
         description,
+        ...computeAngularDiameter(key, astroBody, peakDate),
       };
     }
 
@@ -439,6 +531,7 @@ export function calculateAnnualPlanetSummaries(
       monthlyData,
       description,
       ...(nightDataUnavailable ? { nightDataUnavailable: true } : {}),
+      ...computeAngularDiameter(key, astroBody, peakDate),
     };
   });
 }

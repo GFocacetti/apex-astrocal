@@ -1,7 +1,13 @@
 import React from 'react';
 import { UserLocation } from '../types';
-import { MapPin, Navigation, Search, Calendar, Sparkles } from 'lucide-react';
+import { MapPin, Navigation, Search, Calendar } from 'lucide-react';
 import { ApexLogo } from './ApexLogo';
+
+interface TabNode {
+  id: string;
+  label: string;
+  children?: TabNode[];
+}
 
 interface NavbarProps {
   location: UserLocation;
@@ -24,32 +30,59 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   isGpsLoading,
 }) => {
-  const effemeridiSubTabs = [
-    { id: 'annual', label: 'Apex Annuale' },
-    { id: 'ephemeris20', label: 'Cicli lungo periodo' },
+  const effemeridiSubTabs: TabNode[] = [
+    { id: 'annual', label: 'Quando osservare' },
+    { id: 'ephemeris20', label: 'Cicli di lungo periodo' },
     { id: 'saturn', label: 'Speciale Saturno' },
     { id: 'libration', label: 'Librazioni Lunari' },
     { id: 'eclipses', label: 'Eclissi' },
   ];
 
-  const guideSubTabs = [
+  const guideSubTabs: TabNode[] = [
     { id: 'guideVisual', label: 'Osservazione Visuale' },
     { id: 'guideImaging', label: 'Riprese Deep e Planetarie' },
   ];
 
-  const filterGuideSubTabs = [
-    { id: 'filtersVisual', label: 'Filtri Visuali' },
-    { id: 'filtersImaging', label: 'Filtri Deep e Planetari' },
+  const guidesSimulatorsSubTabs: TabNode[] = [
+    {
+      id: 'simulators',
+      label: 'Simulatori',
+      children: [
+        { id: 'simEyepiece', label: 'Campo Apparente Oculare' },
+        { id: 'simSeeingAdc', label: 'Seeing & Dispersione (ADC)' },
+        { id: 'simFieldRotation', label: 'Rotazione di Campo' },
+        { id: 'simSnrStacking', label: 'SNR & Stacking' },
+        { id: 'simBahtinov', label: 'Maschera di Bahtinov' },
+      ],
+    },
+    {
+      id: 'filters',
+      label: 'Guide (coming soon)',
+      children: [
+        { id: 'filtersVisual', label: 'Filtri per visuale' },
+        { id: 'filtersImaging', label: 'Filtri per deep e planetario' },
+      ],
+    },
   ];
 
-  const parentTabs = [
-    { id: 'effemeridi', label: 'Effemeridi', subTabs: effemeridiSubTabs },
-    { id: 'guide', label: 'Calcolatori per il Telescopio', subTabs: guideSubTabs },
-    { id: 'guides', label: 'Guide', subTabs: filterGuideSubTabs },
+  const parentTabs: TabNode[] = [
+    { id: 'effemeridi', label: 'Effemeridi', children: effemeridiSubTabs },
+    { id: 'guide', label: 'Calcolatori per il Telescopio', children: guideSubTabs },
+    { id: 'guides', label: 'Guide & Simulatori', children: guidesSimulatorsSubTabs },
   ];
 
-  const activeParentTab =
-    parentTabs.find((p) => p.subTabs.some((t) => t.id === activeTab)) ?? parentTabs[0];
+  // Resolve which branch of the tab tree the active leaf belongs to, so each
+  // navigation row can highlight its own ancestor of the current selection.
+  const containsLeaf = (node: TabNode, leafId: string): boolean =>
+    node.id === leafId || (node.children?.some((c) => containsLeaf(c, leafId)) ?? false);
+
+  const firstLeafId = (node: TabNode): string =>
+    node.children?.length ? firstLeafId(node.children[0]) : node.id;
+
+  const activeParentTab = parentTabs.find((p) => containsLeaf(p, activeTab)) ?? parentTabs[0];
+  const subTabs = activeParentTab.children ?? [];
+  const activeSubTab = subTabs.find((t) => containsLeaf(t, activeTab));
+  const subSubTabs = activeSubTab?.children ?? [];
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-xl">
@@ -119,7 +152,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.subTabs[0].id)}
+                onClick={() => setActiveTab(firstLeafId(tab))}
                 className={`whitespace-nowrap px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
                   isActive
                     ? 'bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
@@ -134,24 +167,50 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Sub Navigation Tabs (current parent group) */}
         <nav className="pt-2 flex items-center gap-2 overflow-x-auto scrollbar-thin whitespace-nowrap flex-wrap sm:flex-nowrap pb-1.5 touch-pan-x">
-          {activeParentTab.subTabs.map((tab) => {
-            const isActive = activeTab === tab.id;
+          {subTabs.map((tab) => {
+            const isActive = activeSubTab?.id === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => setActiveTab(firstLeafId(tab))}
                 className={`whitespace-nowrap px-3 py-1 text-[11px] font-medium rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
                   isActive
                     ? 'bg-slate-800 text-amber-300 border border-slate-700'
                     : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 border border-transparent'
                 }`}
               >
-                {tab.id === 'saturn' && <Sparkles className="w-3 h-3 text-amber-400" />}
+                {tab.id === 'saturn' && (
+                  <span className="text-[11px] leading-none" role="img" aria-label="Saturno">
+                    🪐
+                  </span>
+                )}
                 {tab.label}
               </button>
             );
           })}
         </nav>
+
+        {/* Third-level Tabs (only where the active sub-tab has children) */}
+        {subSubTabs.length > 0 && (
+          <nav className="pt-1 pl-3 flex items-center gap-2 overflow-x-auto scrollbar-thin whitespace-nowrap flex-wrap sm:flex-nowrap pb-1.5 touch-pan-x">
+            {subSubTabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`whitespace-nowrap px-2.5 py-0.5 text-[11px] font-medium rounded-md transition-all shrink-0 border-l-2 ${
+                    isActive
+                      ? 'border-amber-500/60 text-amber-300 bg-slate-800/60'
+                      : 'border-slate-700/60 text-slate-500 hover:text-slate-300 hover:bg-slate-800/40'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+        )}
       </div>
     </header>
   );

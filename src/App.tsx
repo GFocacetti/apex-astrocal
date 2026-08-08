@@ -11,6 +11,11 @@ import { TabLunarLibration } from './components/TabLunarLibration';
 import { TabEclipses } from './components/TabEclipses';
 import { TabAstroGuide } from './components/TabAstroGuide';
 import { TabFilterGuides } from './components/TabFilterGuides';
+import { TabSimulatorEyepiece } from './components/TabSimulatorEyepiece';
+import { TabSimulatorSeeingAdc } from './components/TabSimulatorSeeingAdc';
+import { TabSimulatorFieldRotation } from './components/TabSimulatorFieldRotation';
+import { TabSimulatorSnrStacking } from './components/TabSimulatorSnrStacking';
+import { TabSimulatorBahtinov } from './components/TabSimulatorBahtinov';
 
 export default function App() {
   // Initial location/year/tab restored from localStorage (fallback: Roma, Italia)
@@ -87,6 +92,16 @@ export default function App() {
         {activeTab === 'filtersVisual' && <TabFilterGuides section="visual" />}
 
         {activeTab === 'filtersImaging' && <TabFilterGuides section="imaging" />}
+
+        {activeTab === 'simEyepiece' && <TabSimulatorEyepiece />}
+
+        {activeTab === 'simSeeingAdc' && <TabSimulatorSeeingAdc />}
+
+        {activeTab === 'simFieldRotation' && <TabSimulatorFieldRotation location={location} />}
+
+        {activeTab === 'simSnrStacking' && <TabSimulatorSnrStacking />}
+
+        {activeTab === 'simBahtinov' && <TabSimulatorBahtinov />}
       </main>
 
       {/* Footer */}

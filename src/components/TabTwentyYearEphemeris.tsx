@@ -14,7 +14,8 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { Calendar, Compass, Sun, Filter, Star, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
+import { Calendar, Sun, Filter, Star, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
+import { ApexIcon } from './ApexIcon';
 
 interface TabTwentyYearEphemerisProps {
   location: UserLocation;
@@ -60,6 +61,9 @@ export const TabTwentyYearEphemeris: React.FC<TabTwentyYearEphemerisProps> = ({ 
     <div className="space-y-8 text-slate-100">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
+          <ApexIcon className="w-32 h-32" />
+        </div>
         <div className="relative z-10 max-w-3xl">
           <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2">
             <Calendar className="w-4 h-4" />

@@ -49,6 +49,13 @@ export interface AnnualPlanetSummary {
   // could not be determined (midnight sun / polar night at this latitude),
   // meaning that month's value fell back to the raw (unfiltered) transit altitude.
   nightDataUnavailable?: boolean;
+  // Apparent (angular) diameter of the disc at peakDate, in arcseconds.
+  // Only present for planets (not Sun/Moon, whose diameter varies on a different basis).
+  angularDiameterArcsec?: number;
+  // Typical maximum apparent diameter reachable: at opposition for outer
+  // planets, at inferior conjunction for Mercury/Venus. Reference ceiling to
+  // compare angularDiameterArcsec against.
+  angularDiameterMaxArcsec?: number;
 }
 
 /**
@@ -64,6 +71,7 @@ export interface InnerPlanetDayPoint {
   altitudeAtTwilight: number; // altitude at the relevant dusk/dawn moment, degrees (can be negative if below horizon)
   twilightTimeStr: string | null; // formatted UTC time of that dusk/dawn moment, or null if not found
   favorable: boolean; // true when both altitude and elongation clear the visibility thresholds
+  angularDiameterArcsec?: number; // apparent diameter of the disc that day, in arcseconds
 }
 
 export interface InnerPlanetVisibilityYear {
