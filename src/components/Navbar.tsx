@@ -55,6 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         { id: 'simBahtinov', label: 'Maschera di Bahtinov' },
         { id: 'simLrgbOsc', label: 'LRGB vs OSC' },
         { id: 'simCollimation', label: 'Collimazione' },
+        { id: 'simBackfocus', label: 'Backfocus' },
       ],
     },
     {

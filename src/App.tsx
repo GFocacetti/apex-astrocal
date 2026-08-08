@@ -18,6 +18,7 @@ import { TabSimulatorSnrStacking } from './components/TabSimulatorSnrStacking';
 import { TabSimulatorBahtinov } from './components/TabSimulatorBahtinov';
 import { TabSimulatorLrgbOsc } from './components/TabSimulatorLrgbOsc';
 import { TabSimulatorCollimation } from './components/TabSimulatorCollimation';
+import { TabSimulatorBackfocus } from './components/TabSimulatorBackfocus';
 
 export default function App() {
   // Initial location/year/tab restored from localStorage (fallback: Roma, Italia)
@@ -108,6 +109,8 @@ export default function App() {
         {activeTab === 'simLrgbOsc' && <TabSimulatorLrgbOsc />}
 
         {activeTab === 'simCollimation' && <TabSimulatorCollimation />}
+
+        {activeTab === 'simBackfocus' && <TabSimulatorBackfocus />}
       </main>
 
       {/* Footer */}
