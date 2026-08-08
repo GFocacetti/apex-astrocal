@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 
 async function startServer() {
   const app = express();
@@ -13,8 +12,12 @@ async function startServer() {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
-  // Vite middleware for development vs static production serving
+  // Vite middleware for development vs static production serving. The import
+  // is dynamic and lives inside this branch on purpose: the production bundle
+  // must never require vite, which is a dev-only dependency and is not shipped
+  // inside the packaged desktop app.
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
