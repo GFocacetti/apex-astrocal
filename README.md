@@ -8,12 +8,23 @@ Applicazione web per la pianificazione di osservazioni astronomiche: altezze pla
 
 ## Funzionalità
 
-- **Altezza Annuale** — altezza massima di culminazione di Sole, Luna e pianeti per l'anno selezionato, con profilo mensile.
-- **Effemeridi 100 Anni** — opposizioni planetarie, massime elongazioni e ciclo undecennale di attività solare dal 2026 al 2125.
+- **Quando osservare** — altezza massima di culminazione di Sole, Luna e pianeti per l'anno selezionato, con profilo mensile e diametro apparente confrontato con il massimo raggiungibile.
+- **Cicli di lungo periodo** — opposizioni planetarie, massime elongazioni e ciclo undecennale di attività solare dal 2026 al 2125.
 - **Speciale Saturno** — simulatore interattivo dell'inclinazione degli anelli e classifica degli "anni d'oro" per l'osservazione.
 - **Librazioni Lunari** — momenti favorevoli per osservare oltre il bordo visibile della Luna, con indicazione del lato del disco interessato, verifica dell'illuminazione solare e orari di alba/culmine/tramonto.
 - **Eclissi GPS** — eclissi solari e lunari con visibilità, oscuramento e altezza calcolati per la propria posizione.
 - **Calcolatori per il Telescopio** — ingrandimento, pupilla d'uscita, risoluzione angolare, campo reale oculare, magnitudine limite, campionamento deep-sky e planetario (con confronto sistema di guida), esposizione via regola NPF e guida ai filtri planetari.
+
+### Simulatori interattivi
+
+Sei simulatori didattici che mostrano l'effetto in tempo reale invece di spiegarlo a parole. I calcoli sono quelli reali, non animazioni preconfezionate.
+
+- **Campo Apparente Oculare** — perché il campo apparente e l'ingrandimento sono due cose diverse.
+- **Seeing & Dispersione (ADC)** — la dispersione atmosferica alle basse altezze e come la corregge un ADC.
+- **Rotazione di Campo** — Alt-Azimutale contro Equatoriale, con la posa cumulativa che trasforma le stelle in archi.
+- **SNR & Stacking** — la resa non lineare dello stacking e il peso dell'inquinamento luminoso, con la scala di Bortle e una guida per stimarla a occhio.
+- **Maschera di Bahtinov** — come si legge il pattern di diffrazione per mettere a fuoco.
+- **LRGB vs OSC** — matrice di Bayer e demosaicizzazione a confronto con il mono a piena risoluzione.
 
 ## Stack tecnico
 
@@ -47,7 +58,7 @@ L'app sarà disponibile su `http://localhost:3000`.
 
 ## Eseguibile Windows
 
-### ⬇️ [Scarica Apex per Windows](https://github.com/GFocacetti/apex-astrocal/releases/download/v0.6.3-alpha/Apex.exe)
+### ⬇️ [Scarica Apex per Windows](https://github.com/GFocacetti/apex-astrocal/releases/download/v0.7.0-alpha/Apex.exe)
 
 Un singolo file `.exe` **portable**: nessuna installazione, nessuna compilazione richiesta — si scarica e si avvia direttamente. Il link punta sempre all'ultima versione pubblicata. In alternativa è disponibile anche un installer tradizionale (`Apex-Setup.exe`) nella pagina [Releases](https://github.com/GFocacetti/apex-astrocal/releases).
 
