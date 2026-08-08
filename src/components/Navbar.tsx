@@ -53,6 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         { id: 'simFieldRotation', label: 'Rotazione di Campo' },
         { id: 'simSnrStacking', label: 'SNR & Stacking' },
         { id: 'simBahtinov', label: 'Maschera di Bahtinov' },
+        { id: 'simLrgbOsc', label: 'LRGB vs OSC' },
       ],
     },
     {

@@ -16,6 +16,7 @@ import { TabSimulatorSeeingAdc } from './components/TabSimulatorSeeingAdc';
 import { TabSimulatorFieldRotation } from './components/TabSimulatorFieldRotation';
 import { TabSimulatorSnrStacking } from './components/TabSimulatorSnrStacking';
 import { TabSimulatorBahtinov } from './components/TabSimulatorBahtinov';
+import { TabSimulatorLrgbOsc } from './components/TabSimulatorLrgbOsc';
 
 export default function App() {
   // Initial location/year/tab restored from localStorage (fallback: Roma, Italia)
@@ -102,6 +103,8 @@ export default function App() {
         {activeTab === 'simSnrStacking' && <TabSimulatorSnrStacking />}
 
         {activeTab === 'simBahtinov' && <TabSimulatorBahtinov />}
+
+        {activeTab === 'simLrgbOsc' && <TabSimulatorLrgbOsc />}
       </main>
 
       {/* Footer */}
