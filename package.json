@@ -2,7 +2,7 @@
   "name": "apex-astrocal",
   "description": "Effemeridi astronomiche, altezze planetarie, anelli di Saturno, eclissi e librazioni lunari per le tue coordinate GPS.",
   "private": true,
-  "version": "0.7.0-alpha",
+  "version": "0.7.1-alpha",
   "license": "GPL-3.0-or-later",
   "author": "Giuseppe Focacetti",
   "type": "module",

@@ -17,7 +17,7 @@ Applicazione web per la pianificazione di osservazioni astronomiche: altezze pla
 
 ### Simulatori interattivi
 
-Sei simulatori didattici che mostrano l'effetto in tempo reale invece di spiegarlo a parole. I calcoli sono quelli reali, non animazioni preconfezionate.
+Dieci simulatori didattici che mostrano l'effetto in tempo reale invece di spiegarlo a parole. I calcoli sono quelli reali, non animazioni preconfezionate.
 
 - **Campo Apparente Oculare** — perché il campo apparente e l'ingrandimento sono due cose diverse.
 - **Seeing & Dispersione (ADC)** — la dispersione atmosferica alle basse altezze e come la corregge un ADC.
@@ -25,6 +25,10 @@ Sei simulatori didattici che mostrano l'effetto in tempo reale invece di spiegar
 - **SNR & Stacking** — la resa non lineare dello stacking e il peso dell'inquinamento luminoso, con la scala di Bortle e una guida per stimarla a occhio.
 - **Maschera di Bahtinov** — come si legge il pattern di diffrazione per mettere a fuoco.
 - **LRGB vs OSC** — matrice di Bayer e demosaicizzazione a confronto con il mono a piena risoluzione.
+- **Collimazione** — star test defocalizzato su Newton o SCT, con le tre viti che si comportano come sul telescopio vero.
+- **Backfocus** — perché una spaziatura sbagliata sfilaccia gli angoli lasciando il centro puntiforme.
+- **Allineamento Polare** — la Polare nel cannocchiale polare, posizionata dal tempo siderale reale della propria località.
+- **Autoguida** — errore periodico, deriva e aggressività, con la curva RMS che mostra perché correggere troppo peggiora.
 
 ## Stack tecnico
 
