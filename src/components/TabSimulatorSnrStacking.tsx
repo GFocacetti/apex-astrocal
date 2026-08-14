@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, ReferenceDot } from 'recharts';
 import { Sparkles, Info, Layers, Eye } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 // Each simulated sub-exposure is three minutes long.
@@ -314,8 +315,11 @@ export const TabSimulatorSnrStacking: React.FC = () => {
     canvas.height = size.h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+    // The DPR transform stays in place: applyNoise draws the sky glow in CSS
+    // pixels like everything else, and getImageData/putImageData ignore the
+    // transform anyway. Resetting it here left the glow covering only the
+    // top-left 1/dpr of the frame.
     drawGalaxy(ctx, size.w, size.h);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
     applyNoise(ctx, size.w, size.h, snr, bortle);
   }, [size, snr, bortle]);
 
@@ -355,21 +359,76 @@ export const TabSimulatorSnrStacking: React.FC = () => {
           </h3>
         </div>
 
-        {/* Stacked result */}
-        <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
-          <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-          <div className="absolute top-3 left-3 text-[11px] text-slate-300 bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
-            <span className="font-bold" style={{ color: bortle.color === '#1e293b' ? '#94a3b8' : undefined }}>
-              Bortle {bortle.level}
-            </span>{' '}
-            · integrazione{' '}
-            <span className="text-amber-300 font-bold">
-              {totalMinutes >= 60 ? `${(totalMinutes / 60).toFixed(1)} h` : `${totalMinutes} min`}
-            </span>{' '}
-            · SNR <span className={`font-bold ${qualityClass}`}>{snr.toFixed(1)}</span>
-          </div>
-        </div>
+        <SimulatorStage
+          view={
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+              <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
+              <div className="absolute top-3 left-3 text-[11px] text-slate-300 bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
+                <span className="font-bold" style={{ color: bortle.color === '#1e293b' ? '#94a3b8' : undefined }}>
+                  Bortle {bortle.level}
+                </span>{' '}
+                · integrazione{' '}
+                <span className="text-amber-300 font-bold">
+                  {totalMinutes >= 60 ? `${(totalMinutes / 60).toFixed(1)} h` : `${totalMinutes} min`}
+                </span>{' '}
+                · SNR <span className={`font-bold ${qualityClass}`}>{snr.toFixed(1)}</span>
+              </div>
+            </div>
+          }
+          controls={
+            <>
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Numero di Pose: <strong className="text-amber-400">{subs}</strong>
+                  </span>
+                  <span className="text-[10px] text-slate-500">SNR cresce con la radice quadrata</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={300}
+                  step={1}
+                  value={subs}
+                  onChange={(e) => setSubs(Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <div className="flex gap-1.5 mt-2 flex-wrap">
+                  {[1, 10, 25, 50, 100, 200, 300].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setSubs(n)}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border transition ${
+                        subs === n
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                          : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
+              <div>
+                <label className="block text-xs text-slate-300 mb-1">Inquinamento Luminoso (Scala di Bortle)</label>
+                <select
+                  value={bortleLevel}
+                  onChange={(e) => setBortleLevel(Number(e.target.value))}
+                  className="w-full max-w-md bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold text-cyan-300 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 cursor-pointer"
+                >
+                  {BORTLE_SCALE.map((b) => (
+                    <option key={b.level} value={b.level}>
+                      Classe {b.level} — {b.name} ({b.sqm} mag/arcsec²)
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[11px] text-slate-400 leading-relaxed">{bortle.description}</p>
+              </div>
+            </>
+          }
+        >
         {/* Readouts */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
@@ -397,59 +456,6 @@ export const TabSimulatorSnrStacking: React.FC = () => {
               {(subsToMatchOneHour * SUB_EXPOSURE_MIN / 60).toFixed(1)} h
             </div>
             <div className="text-[10px] text-slate-500 mt-0.5">dal tuo cielo Bortle {bortle.level}</div>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Numero di Pose: <strong className="text-amber-400">{subs}</strong>
-              </span>
-              <span className="text-[10px] text-slate-500">SNR cresce con la radice quadrata</span>
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={300}
-              step={1}
-              value={subs}
-              onChange={(e) => setSubs(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
-            />
-            <div className="flex gap-1.5 mt-2 flex-wrap">
-              {[1, 10, 25, 50, 100, 200, 300].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setSubs(n)}
-                  className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border transition ${
-                    subs === n
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                      : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs text-slate-300 mb-1">Inquinamento Luminoso (Scala di Bortle)</label>
-            <select
-              value={bortleLevel}
-              onChange={(e) => setBortleLevel(Number(e.target.value))}
-              className="w-full max-w-md bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold text-cyan-300 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 cursor-pointer"
-            >
-              {BORTLE_SCALE.map((b) => (
-                <option key={b.level} value={b.level}>
-                  Classe {b.level} — {b.name} ({b.sqm} mag/arcsec²)
-                </option>
-              ))}
-            </select>
-            <p className="mt-1.5 text-[11px] text-slate-400 leading-relaxed">{bortle.description}</p>
           </div>
         </div>
 
@@ -654,6 +660,7 @@ export const TabSimulatorSnrStacking: React.FC = () => {
             che tagliano gran parte di quel fondo, cambiano radicalmente le carte in tavola in città.
           </p>
         </DismissibleInfoPanel>
+        </SimulatorStage>
       </div>
     </div>
   );

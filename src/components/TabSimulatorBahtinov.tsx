@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Info, Focus, Shuffle, Minus, Plus } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 // Focus error range, in arbitrary "focuser steps". Zero is perfect focus.
@@ -318,21 +319,22 @@ export const TabSimulatorBahtinov: React.FC = () => {
           </button>
         </div>
 
-        {/* Star view */}
-        <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
-          <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-          <div className="absolute top-3 left-3 text-[11px] bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
-            <span className={`font-bold ${statusClass}`}>{statusText}</span>
-          </div>
-          {maskOn && isPerfect && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 rounded-lg px-3 py-1.5">
-              A fuoco — puoi iniziare a riprendere
+        <SimulatorStage
+          view={
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+              <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
+              <div className="absolute top-3 left-3 text-[11px] bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
+                <span className={`font-bold ${statusClass}`}>{statusText}</span>
+              </div>
+              {maskOn && isPerfect && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 rounded-lg px-3 py-1.5">
+                  A fuoco — puoi iniziare a riprendere
+                </div>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Focus controls, right under the view they act on */}
-        <div className="space-y-3">
+          }
+          controls={
+            <>
           <div>
             <div className="flex justify-between text-xs text-slate-300 mb-1">
               <span>
@@ -404,8 +406,9 @@ export const TabSimulatorBahtinov: React.FC = () => {
             stai sbagliando. Con la maschera inserita, invece, lo spostamento dello spike centrale te lo dice subito,
             e ti dice anche <em>in che verso</em> correggere.
           </p>
-        </div>
-
+            </>
+          }
+        >
         {/* Readouts */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
@@ -475,6 +478,7 @@ export const TabSimulatorBahtinov: React.FC = () => {
             </p>
           </div>
         </div>
+        </SimulatorStage>
       </div>
     </div>
   );

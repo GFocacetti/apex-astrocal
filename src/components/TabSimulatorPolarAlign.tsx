@@ -3,6 +3,7 @@ import * as Astronomy from 'astronomy-engine';
 import { UserLocation } from '../types';
 import { Sparkles, Info, Compass, Shuffle, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 // Polaris in 2026: precession has carried it to roughly 3h 00m of right
@@ -130,9 +131,9 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-5 items-start">
-          {/* Reticle */}
-          <div className="mx-auto w-full max-w-[400px]">
+        <SimulatorStage
+          view={
+            <div className="mx-auto w-full max-w-[400px]">
             <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="w-full rounded-xl bg-[#04060e] border border-slate-800">
               {/* Faint stars, carried along by the true pole */}
               {FIELD.map((s, i) => (
@@ -193,10 +194,10 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                 </text>
               )}
             </svg>
-          </div>
-
-          {/* Controls */}
-          <div className="space-y-4">
+            </div>
+          }
+          controls={
+            <>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
                 <div className="text-[11px] text-slate-400 mb-2">Vite di Altezza</div>
@@ -283,36 +284,6 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
               </div>
             </div>
 
-            {/* Readouts */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-                <div className="text-[11px] text-slate-400">Errore di Allineamento</div>
-                <div className={`text-xl font-extrabold ${isAligned ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {errTotal.toFixed(1)}′
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  {isAligned ? 'buono per la lunga posa' : 'la Polare non è sulla tacca'}
-                </div>
-              </div>
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-                <div className="text-[11px] text-slate-400">Deriva in 5 Minuti</div>
-                <div className={`text-xl font-extrabold ${driftArcsec5min < 4 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {driftArcsec5min.toFixed(1)}″
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">fino a, senza autoguida</div>
-              </div>
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-                <div className="text-[11px] text-slate-400">Posizione della Polare</div>
-                <div className="text-xl font-extrabold text-cyan-300">ore {clockPos.toFixed(1)}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">sul quadrante del reticolo</div>
-              </div>
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-                <div className="text-[11px] text-slate-400">Distanza dal Polo</div>
-                <div className="text-xl font-extrabold text-slate-200">{(POLARIS_POLE_DIST_DEG * 60).toFixed(0)}′</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">la Polare nel 2026</div>
-              </div>
-            </div>
-
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
@@ -353,6 +324,36 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                 className="w-full accent-amber-500 cursor-pointer"
               />
             </div>
+            </>
+          }
+        >
+        {/* Readouts */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+            <div className="text-[11px] text-slate-400">Errore di Allineamento</div>
+            <div className={`text-xl font-extrabold ${isAligned ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {errTotal.toFixed(1)}′
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">
+              {isAligned ? 'buono per la lunga posa' : 'la Polare non è sulla tacca'}
+            </div>
+          </div>
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+            <div className="text-[11px] text-slate-400">Deriva in 5 Minuti</div>
+            <div className={`text-xl font-extrabold ${driftArcsec5min < 4 ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {driftArcsec5min.toFixed(1)}″
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">fino a, senza autoguida</div>
+          </div>
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+            <div className="text-[11px] text-slate-400">Posizione della Polare</div>
+            <div className="text-xl font-extrabold text-cyan-300">ore {clockPos.toFixed(1)}</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">sul quadrante del reticolo</div>
+          </div>
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+            <div className="text-[11px] text-slate-400">Distanza dal Polo</div>
+            <div className="text-xl font-extrabold text-slate-200">{(POLARIS_POLE_DIST_DEG * 60).toFixed(0)}′</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">la Polare nel 2026</div>
           </div>
         </div>
 
@@ -398,6 +399,7 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
             di acquisizione, che misura l'errore direttamente dalle stelle riprese.
           </p>
         </DismissibleInfoPanel>
+        </SimulatorStage>
       </div>
     </div>
   );

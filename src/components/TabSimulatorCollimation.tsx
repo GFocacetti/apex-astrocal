@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Sparkles, Info, Crosshair, Shuffle, Lightbulb, RotateCcw } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 type Scope = 'newton' | 'sct';
@@ -296,55 +297,163 @@ export const TabSimulatorCollimation: React.FC = () => {
       </div>
 
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
-        {/* Scope selector */}
-        <div className="grid grid-cols-2 gap-3">
-          {(Object.keys(SCOPES) as Scope[]).map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setScope(k)}
-              className={`rounded-xl border px-4 py-3 text-left transition ${
-                scope === k
-                  ? 'bg-amber-500/10 border-amber-500/50 ring-1 ring-amber-500/30'
-                  : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-              }`}
-            >
-              <div className={`text-sm font-bold ${scope === k ? 'text-amber-300' : 'text-slate-200'}`}>
-                {SCOPES[k].label}
+        <SimulatorStage
+          view={
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
+              {/* Star test view */}
+              <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+                <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
+                <div className="absolute top-3 left-3 text-[11px] bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
+                  <span className={`font-bold ${isCollimated ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {isCollimated ? 'Collimato: ombra centrata' : 'Scollimato: ombra decentrata'}
+                  </span>
+                </div>
+                {isCollimated && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 rounded-lg px-3 py-1.5">
+                    Anello uniforme su tutto il giro
+                  </div>
+                )}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">{SCOPES[k].note}</div>
-            </button>
-          ))}
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
-          {/* Star test view */}
-          <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
-            <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-            <div className="absolute top-3 left-3 text-[11px] bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
-              <span className={`font-bold ${isCollimated ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {isCollimated ? 'Collimato: ombra centrata' : 'Scollimato: ombra decentrata'}
-              </span>
-            </div>
-            {isCollimated && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 rounded-lg px-3 py-1.5">
-                Anello uniforme su tutto il giro
+              {/* Cell diagram */}
+              <div className="w-full lg:w-44 shrink-0 bg-slate-950 border border-slate-800 rounded-xl p-3">
+                <div className="text-[11px] text-slate-400 mb-1">Vista del cellone</div>
+                <div className="w-36 h-36 mx-auto">
+                  <CellDiagram errX={errX} errY={errY} screws={screws} hintIndex={hintIndex} />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                  La freccia rossa indica dove è scappata l'ombra. Diventa un punto verde quando è centrata.
+                </p>
               </div>
-            )}
-          </div>
-
-          {/* Cell diagram */}
-          <div className="w-full lg:w-44 shrink-0 bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400 mb-1">Vista del cellone</div>
-            <div className="w-36 h-36 mx-auto">
-              <CellDiagram errX={errX} errY={errY} screws={screws} hintIndex={hintIndex} />
             </div>
-            <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
-              La freccia rossa indica dove è scappata l'ombra. Diventa un punto verde quando è centrata.
-            </p>
-          </div>
-        </div>
+          }
+          controls={
+            <>
+              {/* Scope selector */}
+              <div className="grid grid-cols-2 gap-3">
+                {(Object.keys(SCOPES) as Scope[]).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setScope(k)}
+                    className={`rounded-xl border px-4 py-3 text-left transition ${
+                      scope === k
+                        ? 'bg-amber-500/10 border-amber-500/50 ring-1 ring-amber-500/30'
+                        : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className={`text-sm font-bold ${scope === k ? 'text-amber-300' : 'text-slate-200'}`}>
+                      {SCOPES[k].label}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{SCOPES[k].note}</div>
+                  </button>
+                ))}
+              </div>
 
+              {/* Screws */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className={`rounded-xl border p-3 transition ${
+                      hintIndex === i ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-950 border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-200">Vite {i + 1}</span>
+                      <span className="text-[11px] font-semibold text-cyan-300">
+                        {screws[i] > 0 ? '+' : ''}
+                        {screws[i].toFixed(2)} giri
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => turn(i, -0.25)}
+                        className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+                      >
+                        −¼
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => turn(i, -0.05)}
+                        className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800 transition"
+                      >
+                        −
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => turn(i, 0.05)}
+                        className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800 transition"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => turn(i, 0.25)}
+                        className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+                      >
+                        +¼
+                      </button>
+                    </div>
+                    {showHint && !isCollimated && (
+                      <p className="mt-2 text-[10px] text-amber-300">
+                        suggerito {suggested[i] > 0 ? '+' : ''}
+                        {suggested[i].toFixed(2)} giri
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={randomize}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-amber-300 border border-slate-700 hover:bg-slate-800 transition"
+                >
+                  <Shuffle className="w-3.5 h-3.5" />
+                  Scollima a caso
+                </button>
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Azzera le viti
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowHint((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                    showHint
+                      ? 'bg-amber-500/20 text-amber-200 border-amber-500/50'
+                      : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                  }`}
+                >
+                  <Lightbulb className="w-3.5 h-3.5" />
+                  {showHint ? 'Suggerimenti attivi' : 'Aiutami'}
+                </button>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <Crosshair className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="text-[11px] text-slate-400">Seeing</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.5}
+                    step={0.01}
+                    value={seeing}
+                    onChange={(e) => setSeeing(Number(e.target.value))}
+                    className="w-28 accent-cyan-500 cursor-pointer"
+                  />
+                </div>
+              </div>
+            </>
+          }
+        >
         {/* Readouts */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
@@ -367,108 +476,6 @@ export const TabSimulatorCollimation: React.FC = () => {
               {Math.round(SCOPES[scope].obstruction * 100)}%
             </div>
             <div className="text-[10px] text-slate-500 mt-0.5">tipica per {SCOPES[scope].label}</div>
-          </div>
-        </div>
-
-        {/* Screws */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className={`rounded-xl border p-3 transition ${
-                hintIndex === i ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-950 border-slate-800'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-200">Vite {i + 1}</span>
-                <span className="text-[11px] font-semibold text-cyan-300">
-                  {screws[i] > 0 ? '+' : ''}
-                  {screws[i].toFixed(2)} giri
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => turn(i, -0.25)}
-                  className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
-                >
-                  −¼
-                </button>
-                <button
-                  type="button"
-                  onClick={() => turn(i, -0.05)}
-                  className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800 transition"
-                >
-                  −
-                </button>
-                <button
-                  type="button"
-                  onClick={() => turn(i, 0.05)}
-                  className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800 transition"
-                >
-                  +
-                </button>
-                <button
-                  type="button"
-                  onClick={() => turn(i, 0.25)}
-                  className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
-                >
-                  +¼
-                </button>
-              </div>
-              {showHint && !isCollimated && (
-                <p className="mt-2 text-[10px] text-amber-300">
-                  suggerito {suggested[i] > 0 ? '+' : ''}
-                  {suggested[i].toFixed(2)} giri
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={randomize}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-amber-300 border border-slate-700 hover:bg-slate-800 transition"
-          >
-            <Shuffle className="w-3.5 h-3.5" />
-            Scollima a caso
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Azzera le viti
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowHint((v) => !v)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-              showHint
-                ? 'bg-amber-500/20 text-amber-200 border-amber-500/50'
-                : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
-            }`}
-          >
-            <Lightbulb className="w-3.5 h-3.5" />
-            {showHint ? 'Suggerimenti attivi' : 'Aiutami'}
-          </button>
-
-          <div className="flex items-center gap-2 ml-auto">
-            <Crosshair className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-[11px] text-slate-400">Seeing</span>
-            <input
-              type="range"
-              min={0}
-              max={0.5}
-              step={0.01}
-              value={seeing}
-              onChange={(e) => setSeeing(Number(e.target.value))}
-              className="w-28 accent-cyan-500 cursor-pointer"
-            />
           </div>
         </div>
 
@@ -508,6 +515,7 @@ export const TabSimulatorCollimation: React.FC = () => {
             bloccaggio da allentare prima e ristringere dopo.
           </p>
         </DismissibleInfoPanel>
+        </SimulatorStage>
       </div>
     </div>
   );

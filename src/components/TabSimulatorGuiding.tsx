@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceDot } from 'recharts';
 import { Sparkles, Info, Activity, Play, Pause } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 // Periodic error of the worm gear: the dominant real tracking error on most
@@ -247,17 +248,76 @@ export const TabSimulatorGuiding: React.FC = () => {
           </div>
         </div>
 
-        <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
-          <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-          <div className="absolute top-2 left-3 text-[10px] flex items-center gap-3">
-            <span className="text-amber-400 font-bold">— posizione reale della montatura</span>
-            <span className="text-slate-400">— misura della camera di guida</span>
-          </div>
-          <div className="absolute top-2 right-3 text-[11px] bg-slate-950/70 border border-slate-800 rounded px-2 py-1">
-            <span className={`font-bold ${verdictClass}`}>{verdict}</span>
-          </div>
-        </div>
+        <SimulatorStage
+          view={
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+              <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
+              <div className="absolute top-2 left-3 text-[10px] flex items-center gap-3">
+                <span className="text-amber-400 font-bold">— posizione reale della montatura</span>
+                <span className="text-slate-400">— misura della camera di guida</span>
+              </div>
+              <div className="absolute top-2 right-3 text-[11px] bg-slate-950/70 border border-slate-800 rounded px-2 py-1">
+                <span className={`font-bold ${verdictClass}`}>{verdict}</span>
+              </div>
+            </div>
+          }
+          controls={
+            <>
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Aggressività: <strong className="text-amber-400">{(aggr * 100).toFixed(0)}%</strong>
+                  </span>
+                  <span className="text-[10px] text-slate-500">quanta parte dell'errore misurato viene corretta</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.05}
+                  max={1.35}
+                  step={0.05}
+                  value={aggr}
+                  onChange={(e) => setAggr(Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+              </div>
 
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Posa di Guida: <strong className="text-cyan-400">{exposure}s</strong>
+                  </span>
+                  <span className="text-[10px] text-slate-500">pose lunghe mediano il seeing</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={8}
+                  step={0.5}
+                  value={exposure}
+                  onChange={(e) => setExposure(Number(e.target.value))}
+                  className="w-full accent-cyan-500 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Turbolenza (seeing): <strong className="text-indigo-300">{seeing.toFixed(1)}″</strong>
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={5}
+                  step={0.1}
+                  value={seeing}
+                  onChange={(e) => setSeeing(Number(e.target.value))}
+                  className="w-full accent-indigo-500 cursor-pointer"
+                />
+              </div>
+            </>
+          }
+        >
         {/* Readouts */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
@@ -281,62 +341,6 @@ export const TabSimulatorGuiding: React.FC = () => {
               {measurementNoise(seeing, exposure).toFixed(2)}″
             </div>
             <div className="text-[10px] text-slate-500 mt-0.5">incertezza sul centroide</div>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Aggressività: <strong className="text-amber-400">{(aggr * 100).toFixed(0)}%</strong>
-              </span>
-              <span className="text-[10px] text-slate-500">quanta parte dell'errore misurato viene corretta</span>
-            </div>
-            <input
-              type="range"
-              min={0.05}
-              max={1.35}
-              step={0.05}
-              value={aggr}
-              onChange={(e) => setAggr(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Posa di Guida: <strong className="text-cyan-400">{exposure}s</strong>
-              </span>
-              <span className="text-[10px] text-slate-500">pose lunghe mediano il seeing</span>
-            </div>
-            <input
-              type="range"
-              min={0.5}
-              max={8}
-              step={0.5}
-              value={exposure}
-              onChange={(e) => setExposure(Number(e.target.value))}
-              className="w-full accent-cyan-500 cursor-pointer"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Turbolenza (seeing): <strong className="text-indigo-300">{seeing.toFixed(1)}″</strong>
-              </span>
-            </div>
-            <input
-              type="range"
-              min={0.5}
-              max={5}
-              step={0.1}
-              value={seeing}
-              onChange={(e) => setSeeing(Number(e.target.value))}
-              className="w-full accent-indigo-500 cursor-pointer"
-            />
           </div>
         </div>
 
@@ -428,6 +432,7 @@ export const TabSimulatorGuiding: React.FC = () => {
             misura: prova a portare l'aggressività oltre il 100% e osserva come si separano.
           </p>
         </DismissibleInfoPanel>
+        </SimulatorStage>
       </div>
     </div>
   );

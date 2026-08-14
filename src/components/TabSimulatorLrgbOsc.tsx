@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Info, Camera, ZoomIn } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 // A mono sensor with no colour filter collects roughly three times the photons
@@ -329,32 +330,97 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
           </h3>
         </div>
 
-        {/* Side-by-side comparison */}
-        <div ref={containerRef} className="w-full">
-          <div className="flex flex-col lg:flex-row gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-bold text-rose-300 mb-1.5">
-                OSC — sensore a colori con matrice di Bayer
+        <SimulatorStage
+          view={
+            <div ref={containerRef} className="w-full">
+              <div className="flex flex-col lg:flex-row gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] font-bold text-rose-300 mb-1.5">
+                    OSC — sensore a colori con matrice di Bayer
+                  </div>
+                  <canvas
+                    ref={oscRef}
+                    style={{ width: size.w, height: size.h }}
+                    className="block rounded-xl border border-rose-500/30 bg-slate-950"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] font-bold text-emerald-300 mb-1.5">
+                    Mono + filtri LRGB — luminanza a piena risoluzione
+                  </div>
+                  <canvas
+                    ref={monoRef}
+                    style={{ width: size.w, height: size.h }}
+                    className="block rounded-xl border border-emerald-500/30 bg-slate-950"
+                  />
+                </div>
               </div>
-              <canvas
-                ref={oscRef}
-                style={{ width: size.w, height: size.h }}
-                className="block rounded-xl border border-rose-500/30 bg-slate-950"
-              />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-bold text-emerald-300 mb-1.5">
-                Mono + filtri LRGB — luminanza a piena risoluzione
+          }
+          controls={
+            <>
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Integrazione Totale: <strong className="text-amber-400">{hours} ore</strong>
+                  </span>
+                  <span className="text-[10px] text-slate-500">identica per entrambi i sensori</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={24}
+                  step={1}
+                  value={hours}
+                  onChange={(e) => setHours(Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
               </div>
-              <canvas
-                ref={monoRef}
-                style={{ width: size.w, height: size.h }}
-                className="block rounded-xl border border-emerald-500/30 bg-slate-950"
-              />
-            </div>
-          </div>
-        </div>
 
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Quota su Luminanza (solo mono): <strong className="text-cyan-400">{lShare}%</strong>
+                  </span>
+                  <span className="text-[10px] text-slate-500">il resto va su R, G e B</span>
+                </div>
+                <input
+                  type="range"
+                  min={20}
+                  max={80}
+                  step={5}
+                  value={lShare}
+                  onChange={(e) => setLShare(Number(e.target.value))}
+                  className="w-full accent-cyan-500 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] text-slate-400 inline-flex items-center gap-1.5">
+                  <ZoomIn className="w-3.5 h-3.5" />
+                  Ingrandimento
+                </span>
+                {[1, 2, 3, 5].map((z) => (
+                  <button
+                    key={z}
+                    type="button"
+                    onClick={() => setZoom(z)}
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold border transition ${
+                      zoom === z
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                    }`}
+                  >
+                    {z}×
+                  </button>
+                ))}
+                <span className="text-[10px] text-slate-500 ml-1">
+                  a 3× e 5× si vedono i pixel: guarda le stelline piccole e i filamenti sottili
+                </span>
+              </div>
+            </>
+          }
+        >
         {/* Readouts */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
@@ -380,69 +446,6 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
             <div className="text-[11px] text-slate-400">Complessità</div>
             <div className="text-xl font-extrabold text-slate-200">4 vs 1</div>
             <div className="text-[10px] text-slate-500 mt-0.5">riprese separate contro una sola</div>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Integrazione Totale: <strong className="text-amber-400">{hours} ore</strong>
-              </span>
-              <span className="text-[10px] text-slate-500">identica per entrambi i sensori</span>
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={24}
-              step={1}
-              value={hours}
-              onChange={(e) => setHours(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Quota su Luminanza (solo mono): <strong className="text-cyan-400">{lShare}%</strong>
-              </span>
-              <span className="text-[10px] text-slate-500">il resto va su R, G e B</span>
-            </div>
-            <input
-              type="range"
-              min={20}
-              max={80}
-              step={5}
-              value={lShare}
-              onChange={(e) => setLShare(Number(e.target.value))}
-              className="w-full accent-cyan-500 cursor-pointer"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] text-slate-400 inline-flex items-center gap-1.5">
-              <ZoomIn className="w-3.5 h-3.5" />
-              Ingrandimento
-            </span>
-            {[1, 2, 3, 5].map((z) => (
-              <button
-                key={z}
-                type="button"
-                onClick={() => setZoom(z)}
-                className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold border transition ${
-                  zoom === z
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                    : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
-                }`}
-              >
-                {z}×
-              </button>
-            ))}
-            <span className="text-[10px] text-slate-500 ml-1">
-              a 3× e 5× si vedono i pixel: guarda le stelline piccole e i filamenti sottili
-            </span>
           </div>
         </div>
 
@@ -478,6 +481,7 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
             questo che chi riprende in banda stretta da cieli inquinati passa quasi sempre al monocromatico.
           </p>
         </DismissibleInfoPanel>
+        </SimulatorStage>
       </div>
     </div>
   );

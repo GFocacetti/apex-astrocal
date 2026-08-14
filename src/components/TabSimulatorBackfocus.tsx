@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Sparkles, Info, Ruler, Shuffle } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 // Almost every refractor flattener and reducer is designed for 55 mm of back
@@ -202,17 +203,71 @@ export const TabSimulatorBackfocus: React.FC = () => {
           </h3>
         </div>
 
-        {/* Full frame */}
-        <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
-          <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-          <div className="absolute top-3 left-3 text-[11px] bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
-            <span className={`font-bold ${verdictClass}`}>{verdict}</span>
-          </div>
-          <div className="absolute bottom-3 right-3 text-[10px] text-slate-500 bg-slate-950/70 border border-slate-800 rounded-lg px-2 py-1">
-            il centro resta sempre a fuoco
-          </div>
-        </div>
+        <SimulatorStage
+          view={
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+              <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
+              <div className="absolute top-3 left-3 text-[11px] bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
+                <span className={`font-bold ${verdictClass}`}>{verdict}</span>
+              </div>
+              <div className="absolute bottom-3 right-3 text-[10px] text-slate-500 bg-slate-950/70 border border-slate-800 rounded-lg px-2 py-1">
+                il centro resta sempre a fuoco
+              </div>
+            </div>
+          }
+          controls={
+            <>
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Distanza spianatore-sensore:{' '}
+                    <strong className={isGood ? 'text-emerald-400' : 'text-amber-400'}>{spacing.toFixed(1)} mm</strong>
+                  </span>
+                  <span className="text-[10px] text-slate-500">troppo vicino ← {TARGET_MM} mm → troppo lontano</span>
+                </div>
+                <input
+                  type="range"
+                  min={MIN_MM}
+                  max={MAX_MM}
+                  step={0.5}
+                  value={spacing}
+                  onChange={(e) => setSpacing(Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+              </div>
 
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] text-slate-400 mr-1">Spessori comuni</span>
+                {[-5, -2, -0.5, 0.5, 2, 5].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setSpacing((s) => Math.max(MIN_MM, Math.min(MAX_MM, Number((s + d).toFixed(1)))))}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+                  >
+                    {d > 0 ? '+' : ''}
+                    {d} mm
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSpacing(TARGET_MM)}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition"
+                >
+                  Esattamente {TARGET_MM} mm
+                </button>
+                <button
+                  type="button"
+                  onClick={randomize}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 text-amber-300 border border-slate-700 hover:bg-slate-800 transition ml-auto"
+                >
+                  <Shuffle className="w-3.5 h-3.5" />
+                  Sbaglia a caso
+                </button>
+              </div>
+            </>
+          }
+        >
         {/* Magnified corners */}
         <div>
           <div className="text-[11px] text-slate-400 mb-2">
@@ -267,58 +322,6 @@ export const TabSimulatorBackfocus: React.FC = () => {
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Distanza spianatore-sensore:{' '}
-                <strong className={isGood ? 'text-emerald-400' : 'text-amber-400'}>{spacing.toFixed(1)} mm</strong>
-              </span>
-              <span className="text-[10px] text-slate-500">troppo vicino ← {TARGET_MM} mm → troppo lontano</span>
-            </div>
-            <input
-              type="range"
-              min={MIN_MM}
-              max={MAX_MM}
-              step={0.5}
-              value={spacing}
-              onChange={(e) => setSpacing(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] text-slate-400 mr-1">Spessori comuni</span>
-            {[-5, -2, -0.5, 0.5, 2, 5].map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setSpacing((s) => Math.max(MIN_MM, Math.min(MAX_MM, Number((s + d).toFixed(1)))))}
-                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
-              >
-                {d > 0 ? '+' : ''}
-                {d} mm
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setSpacing(TARGET_MM)}
-              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition"
-            >
-              Esattamente {TARGET_MM} mm
-            </button>
-            <button
-              type="button"
-              onClick={randomize}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 text-amber-300 border border-slate-700 hover:bg-slate-800 transition ml-auto"
-            >
-              <Shuffle className="w-3.5 h-3.5" />
-              Sbaglia a caso
-            </button>
-          </div>
-        </div>
-
         <DismissibleInfoPanel
           id="sim-backfocus-note"
           icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
@@ -356,6 +359,7 @@ export const TabSimulatorBackfocus: React.FC = () => {
             l'inseguimento in ordine, altrimenti si finisce per inseguire il problema sbagliato.
           </p>
         </DismissibleInfoPanel>
+        </SimulatorStage>
       </div>
     </div>
   );

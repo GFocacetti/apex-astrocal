@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Phone or tablet held sideways: the viewport is wide but far too short to
+   stack a simulation on top of its controls. `pointer: coarse` is what keeps
+   this off desktop, which is landscape too but has the height to spare. */
+@custom-variant sim-split (@media (orientation: landscape) and (pointer: coarse));

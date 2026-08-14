@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { UserLocation } from '../types';
 import { Sparkles, Info, Camera } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 // The Andromeda Galaxy (M31) is the reference target: large, elongated, and
@@ -342,54 +343,94 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
           </span>
         </div>
 
-        {/* Mount selector */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setMount('altaz')}
-            className={`rounded-xl border px-4 py-3 text-left transition ${
-              mount === 'altaz'
-                ? 'bg-rose-500/10 border-rose-500/50 ring-1 ring-rose-500/30'
-                : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-            }`}
-          >
-            <div className={`text-sm font-bold ${mount === 'altaz' ? 'text-rose-300' : 'text-slate-200'}`}>
-              Alt-Azimutale
+        <SimulatorStage
+          view={
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+              <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
+              <div className="absolute top-3 left-3 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1.5">
+                Dopo <span className="text-amber-300 font-bold">{hours.toFixed(1)} h</span> ·{' '}
+                {mount === 'altaz' ? (
+                  <>
+                    rotazione campo{' '}
+                    <span className="text-rose-300 font-bold">{Math.abs(rotationDeg).toFixed(1)}°</span>
+                  </>
+                ) : (
+                  <span className="text-emerald-300 font-bold">campo fermo (0,0°)</span>
+                )}
+              </div>
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Due assi: altezza e azimut</div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMount('equatorial')}
-            className={`rounded-xl border px-4 py-3 text-left transition ${
-              mount === 'equatorial'
-                ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/30'
-                : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-            }`}
-          >
-            <div className={`text-sm font-bold ${mount === 'equatorial' ? 'text-emerald-300' : 'text-slate-200'}`}>
-              Equatoriale
-            </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Un asse allineato al polo celeste</div>
-          </button>
-        </div>
+          }
+          controls={
+            <>
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Tempo Trascorso: <strong className="text-amber-400">{hours.toFixed(1)} ore</strong>
+                  </span>
+                  <span className="text-[10px] text-slate-500">l'oggetto attraversa il meridiano</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={4}
+                  step={0.1}
+                  value={hours}
+                  onChange={(e) => setHours(Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+              </div>
 
-        {/* Simulated frame */}
-        <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
-          <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-          <div className="absolute top-3 left-3 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1.5">
-            Dopo <span className="text-amber-300 font-bold">{hours.toFixed(1)} h</span> ·{' '}
-            {mount === 'altaz' ? (
-              <>
-                rotazione campo{' '}
-                <span className="text-rose-300 font-bold">{Math.abs(rotationDeg).toFixed(1)}°</span>
-              </>
-            ) : (
-              <span className="text-emerald-300 font-bold">campo fermo (0,0°)</span>
-            )}
-          </div>
-        </div>
+              {/* Mount selector */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMount('altaz')}
+                  className={`rounded-xl border px-4 py-3 text-left transition ${
+                    mount === 'altaz'
+                      ? 'bg-rose-500/10 border-rose-500/50 ring-1 ring-rose-500/30'
+                      : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className={`text-sm font-bold ${mount === 'altaz' ? 'text-rose-300' : 'text-slate-200'}`}>
+                    Alt-Azimutale
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Due assi: altezza e azimut</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMount('equatorial')}
+                  className={`rounded-xl border px-4 py-3 text-left transition ${
+                    mount === 'equatorial'
+                      ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/30'
+                      : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className={`text-sm font-bold ${mount === 'equatorial' ? 'text-emerald-300' : 'text-slate-200'}`}>
+                    Equatoriale
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Un asse allineato al polo celeste</div>
+                </button>
+              </div>
 
+              <button
+                type="button"
+                onClick={() => setLongExposure((v) => !v)}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                  longExposure
+                    ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50'
+                    : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${longExposure ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                {longExposure ? 'Posa unica cumulativa: attiva' : 'Simula una posa unica di tutta la sequenza'}
+              </button>
+              <p className="text-[11px] text-slate-500">
+                Con la posa cumulativa attiva vedi il risultato di un'unica esposizione lunga quanto tutta la sequenza:
+                le stelle si trasformano in archi concentrici invece che in punti.
+              </p>
+            </>
+          }
+        >
         {/* Readouts */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
@@ -429,44 +470,6 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
           </p>
         )}
 
-        {/* Controls */}
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Tempo Trascorso: <strong className="text-amber-400">{hours.toFixed(1)} ore</strong>
-              </span>
-              <span className="text-[10px] text-slate-500">l'oggetto attraversa il meridiano</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={4}
-              step={0.1}
-              value={hours}
-              onChange={(e) => setHours(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setLongExposure((v) => !v)}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-              longExposure
-                ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50'
-                : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
-            }`}
-          >
-            <span className={`w-2 h-2 rounded-full ${longExposure ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-            {longExposure ? 'Posa unica cumulativa: attiva' : 'Simula una posa unica di tutta la sequenza'}
-          </button>
-          <p className="text-[11px] text-slate-500">
-            Con la posa cumulativa attiva vedi il risultato di un'unica esposizione lunga quanto tutta la sequenza:
-            le stelle si trasformano in archi concentrici invece che in punti.
-          </p>
-        </div>
-
         <DismissibleInfoPanel
           id="sim-field-rotation-note"
           icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
@@ -489,6 +492,7 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
             brevi ruotate e riallineate in fase di elaborazione — al prezzo di perdere i bordi dell'inquadratura.
           </p>
         </DismissibleInfoPanel>
+        </SimulatorStage>
       </div>
     </div>
   );

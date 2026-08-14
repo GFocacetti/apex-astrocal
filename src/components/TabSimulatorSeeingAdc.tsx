@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Info, Wand2 } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
+import { SimulatorStage } from './SimulatorStage';
 import { ApexIcon } from './ApexIcon';
 
 // Jupiter's apparent diameter near opposition, used as the angular reference
@@ -87,10 +88,18 @@ function drawChannelLayer(canvas: HTMLCanvasElement, w: number, h: number, radiu
   ctx.ellipse(cx - radius * 0.34, cy + radius * 0.19, radius * 0.29, radius * 0.1, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Limb darkening
-  const limb = ctx.createRadialGradient(cx, cy, radius * 0.55, cx, cy, radius);
+  // Limb darkening, running all the way from the centre of the disc so the
+  // planet reads as a sphere. The stops follow I(mu)/I(0) = 1 - u(1 - mu) with
+  // u = 0.7 and mu = sqrt(1 - (r/R)^2): nearly flat across the middle, then
+  // falling away sharply in the last fifth, which is what a limb actually does.
+  const limb = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
   limb.addColorStop(0, 'rgba(0,0,0,0)');
-  limb.addColorStop(1, 'rgba(0,0,0,0.8)');
+  limb.addColorStop(0.3, 'rgba(0,0,0,0.03)');
+  limb.addColorStop(0.5, 'rgba(0,0,0,0.09)');
+  limb.addColorStop(0.7, 'rgba(0,0,0,0.20)');
+  limb.addColorStop(0.85, 'rgba(0,0,0,0.33)');
+  limb.addColorStop(0.95, 'rgba(0,0,0,0.48)');
+  limb.addColorStop(1, 'rgba(0,0,0,0.70)');
   ctx.fillStyle = limb;
   ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
   ctx.restore();
@@ -249,29 +258,145 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
           </h3>
         </div>
 
-        {/* Simulated view */}
-        <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
-          <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
+        <SimulatorStage
+          view={
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+              <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
 
-          {/* Zenith / horizon orientation guide */}
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-slate-500 pointer-events-none">
-            ↑ Zenit
-          </div>
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-slate-500 pointer-events-none">
-            ↓ Orizzonte
-          </div>
+              {/* Zenith / horizon orientation guide */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-slate-500 pointer-events-none">
+                ↑ Zenit
+              </div>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-slate-500 pointer-events-none">
+                ↓ Orizzonte
+              </div>
 
-          <div className="absolute bottom-3 left-3 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1.5">
-            Dispersione <span className="text-cyan-300 font-bold">{dispersion.toFixed(2)}″</span>
-            {adcEnabled && (
-              <>
-                {' '}
-                · Residuo <span className={`font-bold ${residualClass}`}>{Math.abs(residual).toFixed(2)}″</span>
-              </>
-            )}
-          </div>
-        </div>
+              <div className="absolute bottom-3 left-3 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1.5">
+                Dispersione <span className="text-cyan-300 font-bold">{dispersion.toFixed(2)}″</span>
+                {adcEnabled && (
+                  <>
+                    {' '}
+                    · Residuo <span className={`font-bold ${residualClass}`}>{Math.abs(residual).toFixed(2)}″</span>
+                  </>
+                )}
+              </div>
+            </div>
+          }
+          controls={
+            <>
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Altezza sull'Orizzonte: <strong className="text-amber-400">{altitude}°</strong>
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={90}
+                  step={1}
+                  value={altitude}
+                  onChange={(e) => setAltitude(Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+              </div>
 
+              <div>
+                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <span>
+                    Turbolenza / Seeing allo Zenit: <strong className="text-cyan-400">{seeing.toFixed(1)}″</strong>
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {seeing === 0
+                      ? '(cielo perfetto senza atmosfera)'
+                      : seeing <= 1
+                        ? 'Eccellente'
+                        : seeing <= 2
+                          ? 'Buono'
+                          : seeing <= 3.5
+                            ? 'Mediocre'
+                            : 'Pessimo'}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  value={seeing}
+                  onChange={(e) => setSeeing(Number(e.target.value))}
+                  className="w-full accent-cyan-500 cursor-pointer"
+                />
+              </div>
+
+              {/* ADC panel: a control too, so it belongs with the sliders */}
+              <div
+                className={`rounded-xl border p-4 transition-colors ${
+                  adcEnabled ? 'bg-indigo-950/30 border-indigo-500/40' : 'bg-slate-950/60 border-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <div className="text-sm font-bold text-slate-100">Correttore di Dispersione Atmosferica (ADC)</div>
+                    <div className="text-[11px] text-slate-400">
+                      Due prismi contrapposti che introducono una dispersione uguale e contraria
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAdcEnabled((v) => !v)}
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                      adcEnabled
+                        ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50'
+                        : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${adcEnabled ? 'bg-emerald-400' : 'bg-slate-600'}`}
+                    />
+                    {adcEnabled ? 'ADC inserito' : 'ADC escluso'}
+                  </button>
+                </div>
+
+                {adcEnabled && (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex justify-between text-xs text-slate-300 mb-1">
+                      <span>
+                        Rotazione Prismi: <strong className="text-indigo-300">{adcAmount}%</strong>
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        correzione {adcCorrection.toFixed(2)}″
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={adcAmount}
+                      onChange={(e) => setAdcAmount(Number(e.target.value))}
+                      className="w-full accent-indigo-500 cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setAdcAmount(Math.round(perfectAdc))}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-amber-300 border border-slate-700 hover:bg-slate-800 transition"
+                    >
+                      <Wand2 className="w-3.5 h-3.5" />
+                      Regola per questa altezza
+                    </button>
+                    {dispersion > ADC_MAX_CORRECTION && (
+                      <p className="text-[11px] text-rose-400">
+                        A questa altezza la dispersione supera la corsa massima dei prismi ({ADC_MAX_CORRECTION}″): nessun
+                        ADC riesce a correggerla del tutto.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          }
+        >
         {/* Readouts */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
@@ -296,112 +421,6 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Altezza sull'Orizzonte: <strong className="text-amber-400">{altitude}°</strong>
-              </span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={90}
-              step={1}
-              value={altitude}
-              onChange={(e) => setAltitude(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>
-                Turbolenza / Seeing allo Zenit: <strong className="text-cyan-400">{seeing.toFixed(1)}″</strong>
-              </span>
-              <span className="text-[10px] text-slate-500">
-                {seeing <= 1 ? 'Eccellente' : seeing <= 2 ? 'Buono' : seeing <= 3.5 ? 'Mediocre' : 'Pessimo'}
-              </span>
-            </div>
-            <input
-              type="range"
-              min={0.5}
-              max={5}
-              step={0.1}
-              value={seeing}
-              onChange={(e) => setSeeing(Number(e.target.value))}
-              className="w-full accent-cyan-500 cursor-pointer"
-            />
-          </div>
-        </div>
-
-        {/* ADC panel */}
-        <div
-          className={`rounded-xl border p-4 transition-colors ${
-            adcEnabled ? 'bg-indigo-950/30 border-indigo-500/40' : 'bg-slate-950/60 border-slate-800'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <div className="text-sm font-bold text-slate-100">Correttore di Dispersione Atmosferica (ADC)</div>
-              <div className="text-[11px] text-slate-400">
-                Due prismi contrapposti che introducono una dispersione uguale e contraria
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setAdcEnabled((v) => !v)}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                adcEnabled
-                  ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50'
-                  : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${adcEnabled ? 'bg-emerald-400' : 'bg-slate-600'}`}
-              />
-              {adcEnabled ? 'ADC inserito' : 'ADC escluso'}
-            </button>
-          </div>
-
-          {adcEnabled && (
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-xs text-slate-300 mb-1">
-                <span>
-                  Rotazione Prismi: <strong className="text-indigo-300">{adcAmount}%</strong>
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  correzione {adcCorrection.toFixed(2)}″
-                </span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={adcAmount}
-                onChange={(e) => setAdcAmount(Number(e.target.value))}
-                className="w-full accent-indigo-500 cursor-pointer"
-              />
-              <button
-                type="button"
-                onClick={() => setAdcAmount(Math.round(perfectAdc))}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-amber-300 border border-slate-700 hover:bg-slate-800 transition"
-              >
-                <Wand2 className="w-3.5 h-3.5" />
-                Regola per questa altezza
-              </button>
-              {dispersion > ADC_MAX_CORRECTION && (
-                <p className="text-[11px] text-rose-400">
-                  A questa altezza la dispersione supera la corsa massima dei prismi ({ADC_MAX_CORRECTION}″): nessun
-                  ADC riesce a correggerla del tutto.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
         <DismissibleInfoPanel
           id="sim-seeing-adc-note"
           icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
@@ -422,6 +441,7 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
             salga più in alto.
           </p>
         </DismissibleInfoPanel>
+        </SimulatorStage>
       </div>
     </div>
   );
