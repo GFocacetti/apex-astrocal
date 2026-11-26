@@ -33,7 +33,8 @@ export interface PersistedState {
 const DEFAULT_STATE: PersistedState = {
   location: PRESET_OBSERVATORIES[0],
   selectedYear: 2026,
-  activeTab: 'annual',
+  // First page of the first section in the navigation.
+  activeTab: 'simEyepiece',
 };
 
 function isValidLocation(loc: any): loc is UserLocation {

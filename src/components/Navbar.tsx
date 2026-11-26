@@ -61,9 +61,9 @@ const guidesSimulatorsSubTabs: TabNode[] = [
 ];
 
 const parentTabs: TabNode[] = [
-  { id: 'effemeridi', label: 'Effemeridi', children: effemeridiSubTabs },
-  { id: 'guide', label: 'Calcolatori', children: guideSubTabs },
   { id: 'guides', label: 'Guide e simulatori', children: guidesSimulatorsSubTabs },
+  { id: 'guide', label: 'Calcolatori', children: guideSubTabs },
+  { id: 'effemeridi', label: 'Effemeridi', children: effemeridiSubTabs },
 ];
 
 const YEARS = Array.from({ length: 100 }, (_, i) => 2026 + i);
