@@ -2,112 +2,34 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Info, Camera, ZoomIn } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
 import { SimulatorStage } from './SimulatorStage';
-import { ApexIcon } from './ApexIcon';
+import { loadM51Photo, M51_CREDIT, M51_HEIGHT, M51_WIDTH } from '../services/m51Photo';
 
 // A mono sensor with no colour filter collects roughly three times the photons
 // of a single colour channel, which is why the luminance frame carries the detail.
 const UNFILTERED_GAIN = 3;
 
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const STARS = (() => {
-  const rand = mulberry32(31337);
-  return Array.from({ length: 260 }, () => ({
-    x: rand(),
-    y: rand(),
-    r: 0.35 + rand() * rand() * 1.9,
-    hue: rand(),
-    a: 0.4 + rand() * 0.6,
-  }));
-})();
+// Point of the photo the zoom closes in on: a stretch of the inner arms full
+// of small pink HII regions and faint stars, the finest coloured detail in the
+// frame and exactly where a Bayer matrix shows its limits.
+const FOCUS_X = 0.31;
+const FOCUS_Y = 0.4;
 
 /**
- * The "truth": what the sky really looks like, before any sensor samples it.
- * Deliberately full of fine detail - thin filaments and small stars - because
- * that is exactly what a Bayer matrix struggles to reproduce.
+ * The "truth": the sky as the optics deliver it, sampled at the sensor's own
+ * pixel scale. The sensor's resolution on the sky is fixed; zooming only
+ * crops a smaller patch around FOCUS and magnifies it, so pixel-level
+ * artefacts become visible.
  */
-function drawTruth(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const cx = w / 2;
-  const cy = h / 2;
-  const R = Math.min(w, h) * 0.45;
-
-  ctx.fillStyle = '#04060e';
-  ctx.fillRect(0, 0, w, h);
-
-  // Emission nebula body
-  const body = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
-  body.addColorStop(0, 'rgba(226, 96, 118, 0.55)');
-  body.addColorStop(0.45, 'rgba(150, 60, 120, 0.3)');
-  body.addColorStop(1, 'rgba(40, 40, 110, 0)');
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, R, R * 0.72, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Teal core
-  const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.3);
-  core.addColorStop(0, 'rgba(150, 240, 225, 0.5)');
-  core.addColorStop(1, 'rgba(60, 160, 170, 0)');
-  ctx.fillStyle = core;
-  ctx.beginPath();
-  ctx.arc(cx, cy, R * 0.3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Fine filaments: thin, high-contrast structure at the resolution limit
-  const rand = mulberry32(4242);
-  ctx.lineCap = 'round';
-  for (let i = 0; i < 26; i++) {
-    const a0 = rand() * Math.PI * 2;
-    const rr = R * (0.18 + rand() * 0.7);
-    ctx.beginPath();
-    let px = cx + Math.cos(a0) * rr;
-    let py = cy + Math.sin(a0) * rr * 0.72;
-    ctx.moveTo(px, py);
-    let ang = a0 + Math.PI / 2 + (rand() - 0.5);
-    const steps = 8 + Math.floor(rand() * 10);
-    for (let s = 0; s < steps; s++) {
-      ang += (rand() - 0.5) * 0.5;
-      px += Math.cos(ang) * (R * 0.055);
-      py += Math.sin(ang) * (R * 0.055);
-      ctx.lineTo(px, py);
-    }
-    ctx.strokeStyle = rand() > 0.45 ? 'rgba(255, 170, 180, 0.55)' : 'rgba(120, 210, 235, 0.45)';
-    ctx.lineWidth = 0.8 + rand() * 0.9;
-    ctx.stroke();
-  }
-
-  // Dark dust lanes
-  for (let i = 0; i < 7; i++) {
-    ctx.beginPath();
-    const a0 = rand() * Math.PI * 2;
-    const rr = R * (0.25 + rand() * 0.6);
-    ctx.ellipse(cx + Math.cos(a0) * rr * 0.6, cy + Math.sin(a0) * rr * 0.4, R * 0.3, R * 0.035, a0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(6, 6, 16, 0.5)';
-    ctx.fill();
-  }
-
-  // Stars: the sharpest thing in the frame, and where Bayer artefacts show most
-  for (const s of STARS) {
-    const px = s.x * w;
-    const py = s.y * h;
-    const tint =
-      s.hue < 0.33 ? [255, 214, 190] : s.hue < 0.66 ? [235, 240, 255] : [190, 214, 255];
-    const g = ctx.createRadialGradient(px, py, 0, px, py, Math.max(1, s.r * 2.4));
-    g.addColorStop(0, `rgba(${tint[0]},${tint[1]},${tint[2]},${s.a})`);
-    g.addColorStop(1, `rgba(${tint[0]},${tint[1]},${tint[2]},0)`);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(px, py, Math.max(1, s.r * 2.4), 0, Math.PI * 2);
-    ctx.fill();
-  }
+function drawTruth(ctx: CanvasRenderingContext2D, photo: HTMLImageElement, w: number, h: number, zoom: number) {
+  const aspect = h / w;
+  const fullW = Math.min(M51_WIDTH, M51_HEIGHT / aspect);
+  const sw = fullW / zoom;
+  const sh = sw * aspect;
+  const sx = Math.max(0, Math.min(M51_WIDTH - sw, FOCUS_X * M51_WIDTH - sw / 2));
+  const sy = Math.max(0, Math.min(M51_HEIGHT - sh, FOCUS_Y * M51_HEIGHT - sh / 2));
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(photo, sx, sy, sw, sh, 0, 0, w, h);
 }
 
 function gaussian(): number {
@@ -235,6 +157,15 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
   const oscRef = useRef<HTMLCanvasElement>(null);
   const monoRef = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState({ w: 360, h: 260 });
+  const [photo, setPhoto] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadM51Photo().then((img) => alive && setPhoto(img), () => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Photon budget. OSC spends all its time collecting through the Bayer filters
   // at once; the mono rig splits the same clock between L and the RGB frames.
@@ -262,7 +193,7 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
   useEffect(() => {
     const oscCanvas = oscRef.current;
     const monoCanvas = monoRef.current;
-    if (!oscCanvas || !monoCanvas) return;
+    if (!oscCanvas || !monoCanvas || !photo) return;
 
     // Work at the sensor's own pixel scale, then magnify with nearest-neighbour
     // so that pixel-level artefacts stay visible instead of being smoothed away.
@@ -274,7 +205,7 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
     truth.height = hh;
     const tctx = truth.getContext('2d', { willReadFrequently: true });
     if (!tctx) return;
-    drawTruth(tctx, ww, hh);
+    drawTruth(tctx, photo, ww, hh, zoom);
     const src = tctx.getImageData(0, 0, ww, hh);
 
     const paint = (canvas: HTMLCanvasElement, data: ImageData) => {
@@ -294,26 +225,18 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
 
     paint(oscCanvas, renderOsc(src, ww, hh, oscNoise));
     paint(monoCanvas, renderLrgb(src, ww, hh, monoLumNoise, monoColNoise));
-  }, [size, zoom, oscNoise, monoLumNoise, monoColNoise]);
+  }, [size, zoom, oscNoise, monoLumNoise, monoColNoise, photo]);
 
   const monoAdvantage = Math.sqrt(monoLumSignal / Math.max(0.001, oscLumSignal));
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Simulatori Interattivi
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            LRGB (Mono) vs OSC (Colore)
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Simulatore 06 / 10</div>
+          <h2 className="page-title">LRGB in mono o OSC a colori</h2>
+          <p className="lead">
             Stesso soggetto, stesso tempo totale, due sensori diversi. La camera a colori mette un filtro rosso,
             verde o blu su ogni singolo pixel e deve indovinare gli altri due; la monocromatica riprende la
             luminanza senza filtri a piena risoluzione e ci "dipinge sopra" il colore. Ingrandisci al livello del
@@ -322,49 +245,77 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 sm:p-6 space-y-6">
         <div className="flex items-center gap-2 flex-wrap">
-          <Camera className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300">
+          <h3 className="section-title">
             Confronto a parità di {hours} ore di integrazione
           </h3>
         </div>
 
         <SimulatorStage
+          readouts={
+            <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Risoluzione Effettiva</div>
+            <div className="text-xl font-medium text-neutral-200">100%</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">mono · OSC circa 60-70%</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Vantaggio SNR Mono</div>
+            <div className="text-xl font-medium text-neutral-200">{monoAdvantage.toFixed(2)}×</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">sulla luminanza</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Tempo su Luminanza</div>
+            <div className="text-xl font-medium text-neutral-100">
+              {((hours * lShare) / 100).toFixed(1)} h
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">
+              {(hours * (1 - lShare / 100)).toFixed(1)} h divise su R, G e B
+            </div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Complessità</div>
+            <div className="text-xl font-medium text-neutral-200">4 vs 1</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">riprese separate contro una sola</div>
+          </div>
+        </div>
+          }
           view={
             <div ref={containerRef} className="w-full">
               <div className="flex flex-col lg:flex-row gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-bold text-rose-300 mb-1.5">
+                  <div className="text-[11px] font-semibold text-neutral-300 mb-1.5">
                     OSC — sensore a colori con matrice di Bayer
                   </div>
                   <canvas
                     ref={oscRef}
                     style={{ width: size.w, height: size.h }}
-                    className="block rounded-xl border border-rose-500/30 bg-slate-950"
+                    className="block rounded-md border border-neutral-700 bg-neutral-950"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-bold text-emerald-300 mb-1.5">
+                  <div className="text-[11px] font-semibold text-neutral-100 mb-1.5">
                     Mono + filtri LRGB — luminanza a piena risoluzione
                   </div>
                   <canvas
                     ref={monoRef}
                     style={{ width: size.w, height: size.h }}
-                    className="block rounded-xl border border-emerald-500/30 bg-slate-950"
+                    className="block rounded-md border border-neutral-700 bg-neutral-950"
                   />
                 </div>
               </div>
+              <div className="mt-1.5 text-right text-[9px] text-neutral-500">{M51_CREDIT}</div>
             </div>
           }
           controls={
             <>
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
-                    Integrazione Totale: <strong className="text-amber-400">{hours} ore</strong>
+                    Integrazione Totale: <strong className="text-neutral-200">{hours} ore</strong>
                   </span>
-                  <span className="text-[10px] text-slate-500">identica per entrambi i sensori</span>
+                  <span className="text-[10px] text-neutral-500">identica per entrambi i sensori</span>
                 </div>
                 <input
                   type="range"
@@ -373,16 +324,16 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
                   step={1}
                   value={hours}
                   onChange={(e) => setHours(Number(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
               </div>
 
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
-                    Quota su Luminanza (solo mono): <strong className="text-cyan-400">{lShare}%</strong>
+                    Quota su Luminanza (solo mono): <strong className="text-neutral-200">{lShare}%</strong>
                   </span>
-                  <span className="text-[10px] text-slate-500">il resto va su R, G e B</span>
+                  <span className="text-[10px] text-neutral-500">il resto va su R, G e B</span>
                 </div>
                 <input
                   type="range"
@@ -391,12 +342,12 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
                   step={5}
                   value={lShare}
                   onChange={(e) => setLShare(Number(e.target.value))}
-                  className="w-full accent-cyan-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] text-slate-400 inline-flex items-center gap-1.5">
+                <span className="text-[11px] text-neutral-400 inline-flex items-center gap-1.5">
                   <ZoomIn className="w-3.5 h-3.5" />
                   Ingrandimento
                 </span>
@@ -407,63 +358,36 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
                     onClick={() => setZoom(z)}
                     className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold border transition ${
                       zoom === z
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                        : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                        ? 'bg-neutral-100 text-neutral-950 border-neutral-100'
+                        : 'bg-neutral-950 text-neutral-400 border-neutral-700 hover:text-neutral-200'
                     }`}
                   >
                     {z}×
                   </button>
                 ))}
-                <span className="text-[10px] text-slate-500 ml-1">
-                  a 3× e 5× si vedono i pixel: guarda le stelline piccole e i filamenti sottili
+                <span className="text-[10px] text-neutral-500 ml-1">
+                  a 3× e 5× si vedono i pixel: guarda le stelline e le piccole regioni HII rosa nei bracci
                 </span>
               </div>
             </>
           }
         >
-        {/* Readouts */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Risoluzione Effettiva</div>
-            <div className="text-xl font-extrabold text-emerald-400">100%</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">mono · OSC circa 60-70%</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Vantaggio SNR Mono</div>
-            <div className="text-xl font-extrabold text-amber-400">{monoAdvantage.toFixed(2)}×</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">sulla luminanza</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Tempo su Luminanza</div>
-            <div className="text-xl font-extrabold text-cyan-300">
-              {((hours * lShare) / 100).toFixed(1)} h
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {(hours * (1 - lShare / 100)).toFixed(1)} h divise su R, G e B
-            </div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Complessità</div>
-            <div className="text-xl font-extrabold text-slate-200">4 vs 1</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">riprese separate contro una sola</div>
-          </div>
-        </div>
 
         <DismissibleInfoPanel
           id="sim-lrgb-osc-note"
-          icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
-          className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-300"
+          icon={<Info className="w-5 h-5 text-neutral-200 shrink-0 mt-0.5" />}
+          className="bg-neutral-900/40 border border-neutral-700 rounded-md p-4 flex items-start gap-3 text-xs text-neutral-300"
         >
-          <span className="font-bold text-indigo-200">Perché il mono è più nitido (e perché l'OSC resta ottimo)</span>
+          <span className="font-semibold text-neutral-50">Perché il mono è più nitido (e perché l'OSC resta ottimo)</span>
           <p className="mt-1 leading-relaxed">
-            Un sensore <strong className="text-rose-300">OSC</strong> ha davanti una{' '}
-            <strong className="text-slate-100">matrice di Bayer</strong>: i pixel sono coperti a scacchiera da
+            Un sensore <strong className="text-neutral-100">OSC</strong> ha davanti una{' '}
+            <strong className="text-neutral-100">matrice di Bayer</strong>: i pixel sono coperti a scacchiera da
             filtrini rossi, verdi e blu nello schema RGGB. Ogni pixel misura quindi <em>un solo</em> colore, e gli
             altri due vengono ricostruiti per interpolazione dai vicini (demosaicizzazione). Il risultato è che la
             risoluzione reale sul colore scende a circa un mezzo per il verde e un quarto per rosso e blu, e le
-            strutture al limite del campionamento — le stelle piccole, i filamenti sottili — si ammorbidiscono e
-            possono prendere false dominanti. Un sensore <strong className="text-emerald-300">monocromatico</strong>{' '}
-            non ha filtri sui pixel: la posa di <strong className="text-slate-100">luminanza</strong> usa tutti i
+            strutture al limite del campionamento — le stelle piccole, le regioni HII rosa nei bracci — si ammorbidiscono e
+            possono prendere false dominanti. Un sensore <strong className="text-neutral-100">monocromatico</strong>{' '}
+            non ha filtri sui pixel: la posa di <strong className="text-neutral-100">luminanza</strong> usa tutti i
             fotoni di tutte le lunghezze d'onda su tutti i pixel, quindi raccoglie circa tre volte il segnale di un
             singolo canale colorato e mantiene la piena risoluzione. Il colore si riprende a parte con i filtri R, G
             e B, spesso in binning 2×2 perché l'occhio è molto meno sensibile ai dettagli cromatici che a quelli di
@@ -471,12 +395,12 @@ export const TabSimulatorLrgbOsc: React.FC = () => {
             la crominanza a bassa risoluzione viene "dipinta" sopra la luminanza nitida.
             <br />
             <br />
-            Il rovescio della medaglia: il mono richiede una <strong className="text-slate-100">ruota
+            Il rovescio della medaglia: il mono richiede una <strong className="text-neutral-100">ruota
             portafiltri</strong>, quattro serie di pose invece di una, e quindi quattro volte le occasioni di cielo
             sereno per completare un soggetto — oltre a rifare il fuoco a ogni cambio filtro. L'OSC prende tutto in
             una notte sola ed è imbattibile su soggetti che richiedono poco tempo o quando le notti buone sono
             rare. La differenza si ribalta però nel{' '}
-            <strong className="text-amber-300">narrowband</strong>: con un filtro H-alfa su un OSC solo un pixel su
+            <strong className="text-neutral-100">narrowband</strong>: con un filtro H-alfa su un OSC solo un pixel su
             quattro (quelli rossi) raccoglie davvero il segnale, mentre il mono lo raccoglie con tutti — ed è per
             questo che chi riprende in banda stretta da cieli inquinati passa quasi sempre al monocromatico.
           </p>

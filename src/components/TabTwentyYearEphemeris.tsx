@@ -15,7 +15,6 @@ import {
   Area,
 } from 'recharts';
 import { Calendar, Sun, Filter, Star, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
-import { ApexIcon } from './ApexIcon';
 
 interface TabTwentyYearEphemerisProps {
   location: UserLocation;
@@ -58,29 +57,21 @@ export const TabTwentyYearEphemeris: React.FC<TabTwentyYearEphemerisProps> = ({ 
   }, [ephemerisEvents]);
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Calendar className="w-4 h-4" />
-            Previsioni Astronomiche
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Opposizioni, Elongazioni & Cicli Solari
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Effemeridi</div>
+          <h2 className="page-title">Opposizioni, elongazioni e cicli solari</h2>
+          <p className="lead">
             Calcolo delle finestre d'osservazione ottimali per un intero secolo. Scorri i grafici per esplorare in quali anni i pianeti raggiungono la massima altezza al meridiano di {location.name} ({location.latitude.toFixed(2)}° N/S).
           </p>
         </div>
       </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center gap-3 bg-slate-900/80 border border-slate-800 rounded-2xl p-8 text-sm text-slate-300">
-          <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+        <div className="flex items-center justify-center gap-3 bg-neutral-900/50 border border-neutral-800 rounded-lg p-8 text-sm text-neutral-300">
+          <Loader2 className="w-5 h-5 animate-spin text-neutral-200" />
           Calcolo delle effemeridi su 100 anni in corso...
         </div>
       )}
@@ -88,39 +79,38 @@ export const TabTwentyYearEphemeris: React.FC<TabTwentyYearEphemerisProps> = ({ 
       {!isLoading && (
       <>
       {/* 100-Year Opposition Culmination Curve Chart */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-6 space-y-4">
         <div>
-          <h3 className="text-base font-bold flex items-center gap-2 text-amber-300">
-            <Sparkles className="w-4 h-4" />
-            Evoluzione Altezze alle Opposizioni (2026 - 2125)
+          <h3 className="text-base font-semibold flex items-center gap-2 text-neutral-100">
+            Altezza alle opposizioni (2026–2125)
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-neutral-400">
             Altezza massima sull'orizzonte di Marte, Giove e Saturno all'opposizione annuale
           </p>
         </div>
 
         {/* Scrollable Container for 100-Year Chart */}
-        <div className="overflow-x-auto scrollbar-thin touch-pan-x border border-slate-800 rounded-xl p-2 bg-slate-950">
+        <div className="overflow-x-auto scrollbar-thin touch-pan-x border border-neutral-800 rounded-md p-2 bg-neutral-950">
           <div className="h-64 sm:h-72 min-w-[2200px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={oppositionAltitudesChartData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-                <XAxis dataKey="year" stroke="#94a3b8" fontSize={11} interval={1} />
-                <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 90]} unit="°" />
+                <CartesianGrid stroke="#222222" vertical={false} />
+                <XAxis dataKey="year" stroke="#404040" tick={{ fill: "#8a8a8a" }} fontSize={11} interval={1} />
+                <YAxis stroke="#404040" tick={{ fill: "#8a8a8a" }} fontSize={11} domain={[0, 90]} unit="°" />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-slate-950 border border-slate-700 p-3 rounded-xl text-xs space-y-1 shadow-2xl">
-                          <div className="font-bold text-amber-300 mb-1">Anno {label}</div>
+                        <div className="bg-neutral-950 border border-neutral-700 p-3 rounded-md text-xs space-y-1">
+                          <div className="font-semibold text-neutral-100 mb-1">Anno {label}</div>
                           {payload.map((p, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                               <span
                                 className="w-2.5 h-2.5 rounded-full"
                                 style={{ backgroundColor: p.color }}
                               />
-                              <span className="text-slate-300">{p.name}:</span>
-                              <span className="font-bold text-white">
+                              <span className="text-neutral-300">{p.name}:</span>
+                              <span className="font-semibold text-white">
                                 {p.value !== null ? `${p.value}°` : 'Nessuna opposizione'}
                               </span>
                             </div>
@@ -166,47 +156,46 @@ export const TabTwentyYearEphemeris: React.FC<TabTwentyYearEphemerisProps> = ({ 
       </div>
 
       {/* Solar Cycles 100-Year Activity Section */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-base font-bold flex items-center gap-2 text-amber-400">
-              <Sun className="w-5 h-5 text-amber-400" />
-              Cicli di Attività Solare per 100 Anni (2026 - 2125)
+            <h3 className="text-base font-semibold flex items-center gap-2 text-neutral-200">
+              Cicli di attività solare (2026–2125)
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-neutral-400">
               Evoluzione dell'indice di attività elio-fisica e macchie solari sui cicli dal 25 al 34
             </p>
           </div>
-          <span className="text-xs text-amber-300 bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-lg flex items-center gap-1.5 self-start sm:self-auto">
-            ↔️ Scorri o trascina per esplorare 100 anni
+          <span className="text-xs text-neutral-100 bg-neutral-900/50 border border-neutral-700 px-3 py-1 rounded-lg flex items-center gap-1.5 self-start sm:self-auto">
+            Scorri o trascina per esplorare 100 anni
           </span>
         </div>
 
         {/* Scrollable Container for Solar Cycle Area Chart */}
-        <div className="overflow-x-auto scrollbar-thin touch-pan-x border border-slate-800 rounded-xl p-2 bg-slate-950">
+        <div className="overflow-x-auto scrollbar-thin touch-pan-x border border-neutral-800 rounded-md p-2 bg-neutral-950">
           <div className="h-48 sm:h-56 min-w-[2200px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={solarCycleData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="solarGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.6} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor="#b89a6a" stopOpacity={0.6} />
+                    <stop offset="95%" stopColor="#b89a6a" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
-                <XAxis dataKey="year" stroke="#94a3b8" fontSize={11} interval={1} />
-                <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 100]} />
+                <CartesianGrid stroke="#222222" vertical={false} />
+                <XAxis dataKey="year" stroke="#404040" tick={{ fill: "#8a8a8a" }} fontSize={11} interval={1} />
+                <YAxis stroke="#404040" tick={{ fill: "#8a8a8a" }} fontSize={11} domain={[0, 100]} />
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       return (
-                        <div className="bg-slate-950 border border-slate-700 p-3 rounded-xl text-xs space-y-1">
-                          <div className="font-bold text-amber-400">
+                        <div className="bg-neutral-950 border border-neutral-700 p-3 rounded-md text-xs space-y-1">
+                          <div className="font-semibold text-neutral-200">
                             Anno {data.year} - Ciclo {data.cycleNumber} ({data.phase})
                           </div>
-                          <div>Indice Attività: <span className="font-bold text-white">{data.activityIndex} / 100</span></div>
-                          <p className="text-[11px] text-slate-300 mt-1 max-w-xs">{data.recommendationIt}</p>
+                          <div>Indice Attività: <span className="font-semibold text-white">{data.activityIndex} / 100</span></div>
+                          <p className="text-[11px] text-neutral-300 mt-1 max-w-xs">{data.recommendationIt}</p>
                         </div>
                       );
                     }
@@ -217,7 +206,7 @@ export const TabTwentyYearEphemeris: React.FC<TabTwentyYearEphemerisProps> = ({ 
                   type="monotone"
                   dataKey="activityIndex"
                   name="Attività Solare"
-                  stroke="#f59e0b"
+                  stroke="#b89a6a"
                   fillOpacity={1}
                   fill="url(#solarGrad)"
                   strokeWidth={2}
@@ -230,10 +219,10 @@ export const TabTwentyYearEphemeris: React.FC<TabTwentyYearEphemerisProps> = ({ 
 
       {/* Ephemeris Timeline & Filterable List */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-4 rounded-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-neutral-900 border border-neutral-800 p-4 rounded-md">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs font-bold text-slate-200">Filtra per Oggetto Celeste:</span>
+            <Filter className="w-4 h-4 text-neutral-200" />
+            <span className="text-xs font-semibold text-neutral-200">Filtra per Oggetto Celeste:</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {[
@@ -249,8 +238,8 @@ export const TabTwentyYearEphemeris: React.FC<TabTwentyYearEphemerisProps> = ({ 
                 onClick={() => setFilterPlanet(btn.key)}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
                   filterPlanet === btn.key
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                    ? 'bg-neutral-100 text-neutral-950 '
+                    : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
                 }`}
               >
                 {btn.label}
@@ -266,48 +255,48 @@ export const TabTwentyYearEphemeris: React.FC<TabTwentyYearEphemerisProps> = ({ 
             return (
               <div
                 key={idx}
-                className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-lg flex flex-col justify-between transition group"
+                className="bg-neutral-900/50 border border-neutral-800 hover:border-neutral-700 rounded-lg p-5 flex flex-col justify-between transition group"
               >
                 <div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-base"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-base"
                         style={{ backgroundColor: `${pInfo.color}25`, color: pInfo.color }}
                       >
                         {pInfo.symbol}
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-amber-400 block">
+                        <span className="text-xs font-semibold text-neutral-200 block">
                           Anno {ev.year} • {ev.monthName}
                         </span>
-                        <h4 className="font-bold text-sm text-slate-100 group-hover:text-amber-300">
+                        <h4 className="font-semibold text-sm text-neutral-100 group-hover:text-neutral-100">
                           {ev.planetNameIt} ({ev.eventType})
                         </h4>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-extrabold text-amber-400">{ev.maxAltitude}°</div>
-                      <div className="text-[10px] text-slate-500">Altezza Max</div>
+                      <div className="text-xs font-medium text-neutral-200">{ev.maxAltitude}°</div>
+                      <div className="text-[10px] text-neutral-500">Altezza Max</div>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2 bg-slate-950 p-2.5 rounded-xl text-center border border-slate-800/80 text-[11px]">
+                  <div className="mt-4 grid grid-cols-3 gap-2 bg-neutral-950 p-2.5 rounded-md text-center border border-neutral-800/80 text-[11px]">
                     <div>
-                      <div className="text-slate-500">Mag. Apparente</div>
-                      <div className="font-bold text-slate-200">{ev.magnitude}</div>
+                      <div className="text-neutral-500">Mag. Apparente</div>
+                      <div className="font-semibold text-neutral-200">{ev.magnitude}</div>
                     </div>
                     <div>
-                      <div className="text-slate-500">Diam. Angolare</div>
-                      <div className="font-bold text-slate-200">{ev.angularSizeArcsec}"</div>
+                      <div className="text-neutral-500">Diam. Angolare</div>
+                      <div className="font-semibold text-neutral-200">{ev.angularSizeArcsec}"</div>
                     </div>
                     <div>
-                      <div className="text-slate-500">Punteggio</div>
-                      <div className="font-bold text-indigo-400">{ev.score}/100</div>
+                      <div className="text-neutral-500">Punteggio</div>
+                      <div className="font-semibold text-neutral-200">{ev.score}/100</div>
                     </div>
                   </div>
 
-                  <p className="mt-3 text-xs text-slate-300 leading-relaxed">
+                  <p className="mt-3 text-xs text-neutral-300 leading-relaxed">
                     {ev.detailsIt}
                   </p>
                 </div>

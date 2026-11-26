@@ -3,7 +3,6 @@ import { UserLocation } from '../types';
 import { Sliders, Eye, BookOpen, Telescope, Camera, Aperture, Timer, Crosshair, Info } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
 import { CameraSelect } from './CameraSelect';
-import { ApexIcon } from './ApexIcon';
 
 interface TabAstroGuideProps {
   location: UserLocation;
@@ -112,18 +111,18 @@ const WAVELENGTH_PRESETS = [
 ];
 
 const selectClass =
-  'bg-slate-950 border border-slate-700 text-xs font-semibold text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none w-full';
+  'bg-neutral-950 border border-neutral-700 text-xs font-semibold text-neutral-200 rounded-lg px-2.5 py-1.5 focus:outline-none w-full';
 const numberInputClass =
-  'w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none';
+  'w-full bg-neutral-950 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none';
 
 function getSamplingBadgeClass(rating: 'Sottocampionato' | 'Ottimale' | 'Sovracampionato'): string {
   switch (rating) {
     case 'Ottimale':
-      return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      return 'bg-neutral-100 text-neutral-950 border-neutral-100';
     case 'Sottocampionato':
-      return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+      return 'bg-transparent text-neutral-100 border-neutral-500';
     default:
-      return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+      return 'bg-warn/10 text-warn border-warn/40';
   }
 }
 
@@ -134,7 +133,7 @@ function classifySampling(scale: number, rangeMin: number, rangeMax: number): 'S
 }
 
 export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
-  // Calcolatore Ottiche & Ingrandimenti (F-ratio, magnification, exit pupil,
+  // Ottica e ingrandimenti (F-ratio, magnification, exit pupil,
   // Dawes resolving power, true FOV, limiting magnitude)
   const [opticsFocalLength, setOpticsFocalLength] = useState<number>(1000);
   const [opticsAperture, setOpticsAperture] = useState<number>(200);
@@ -152,14 +151,14 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
   const trueFovDeg = magnification > 0 ? Number((opticsAfov / magnification).toFixed(2)) : 0;
   const limitingMagnitude = Number((2 + 5 * Math.log10(Math.max(1, opticsAperture))).toFixed(1));
 
-  // Risoluzione Angolare (Rayleigh, dipendente dalla lunghezza d'onda)
+  // Risoluzione angolare (Rayleigh, dipendente dalla lunghezza d'onda)
   const [rayleighAperture, setRayleighAperture] = useState<number>(200);
   const [rayleighWavelength, setRayleighWavelength] = useState<number>(510);
 
   const rayleighRad = (1.22 * (rayleighWavelength * 1e-9)) / (Math.max(1, rayleighAperture) * 1e-3);
   const rayleighArcsec = Number((rayleighRad * (180 / Math.PI) * 3600).toFixed(3));
 
-  // Campo Reale Oculare (standalone)
+  // Campo reale dell'oculare (standalone)
   const [fovFocalLength, setFovFocalLength] = useState<number>(1000);
   const [fovEyepieceFocal, setFovEyepieceFocal] = useState<number>(10);
   const [fovAfov, setFovAfov] = useState<number>(50);
@@ -167,7 +166,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
   const fovMagnification = fovFocalLength / Math.max(1, fovEyepieceFocal);
   const fovTrueFov = fovMagnification > 0 ? Number((fovAfov / fovMagnification).toFixed(2)) : 0;
 
-  // Campionamento Deep Sky
+  // Campionamento deep-sky
   const [deepFocalLength, setDeepFocalLength] = useState<number>(1000);
   const [deepBinning, setDeepBinning] = useState<number>(1);
   const [deepPixelPitch, setDeepPixelPitch] = useState<number>(3.76);
@@ -194,7 +193,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
       ? `Il campionamento del tuo sistema di imaging è ${guideRatioRaw.toFixed(2)}x inferiore (più fine) di quello di guida.`
       : `Il campionamento del tuo sistema di imaging è ${(1 / guideRatioRaw).toFixed(2)}x superiore (più grossolano) di quello di guida.`;
 
-  // Campionamento Imaging Planetario
+  // Campionamento planetario
   const [planWavelength, setPlanWavelength] = useState<number>(550);
   const [planAperture, setPlanAperture] = useState<number>(200);
   const [planPixelSize, setPlanPixelSize] = useState<number>(3.75);
@@ -207,7 +206,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
   const planIdealFocalRatio = Number((planIdealFocalLength / Math.max(1, planAperture)).toFixed(1));
   const planBarlowResultFocalLength = Math.round(planNativeFocalLength * planBarlow);
 
-  // Esposizione via Regola NPF
+  // Posa massima con la regola NPF
   const [npfFocalLength, setNpfFocalLength] = useState<number>(24);
   const [npfFNumber, setNpfFNumber] = useState<number>(2.8);
   const [npfPixelPitch, setNpfPixelPitch] = useState<number>(3.76);
@@ -218,22 +217,16 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
   const npfHelperPixelPitch = Number(((npfSensorWidth / Math.max(1, npfImageWidthPx)) * 1000).toFixed(2));
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <BookOpen className="w-4 h-4" />
-            Guide e utility per la Strumentazione
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Calcolatore Telescopio & Guida Varie
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Ottimizza le tue sessioni osservative con questi strumenti di calcolo per osservazione e fotografie.
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Calcolatori</div>
+          <h2 className="page-title">{section === 'visual' ? 'Osservazione visuale' : 'Riprese deep e planetarie'}</h2>
+          <p className="lead">
+            {section === 'visual'
+              ? "Ingrandimenti, pupilla d'uscita, campo reale e potere risolutivo del tuo strumento, calcolati mentre muovi i cursori."
+              : 'Campionamento per il deep-sky e il planetario, e tempo di posa massimo senza mosso con la regola NPF, a partire da telescopio e camera.'}
           </p>
         </div>
       </div>
@@ -242,41 +235,39 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
       <>
       {/* Section: Visual Observation Tools */}
       <div className="flex items-center gap-2">
-        <Eye className="w-4 h-4 text-cyan-400" />
-        <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-300">
+        <h3 className="section-title">
           Strumenti di Osservazione Visuale
         </h3>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Combined Optics & Magnification Calculator */}
-        <div className="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Sliders className="w-5 h-5 text-amber-400" />
-            <h3 className="text-base font-bold text-slate-100">
-              Calcolatore Ottiche & Ingrandimenti
+        <div className="lg:col-span-6 bg-neutral-900/50 border border-neutral-800 rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+            <h3 className="text-base font-semibold text-neutral-100">
+              Ottica e ingrandimenti
             </h3>
           </div>
 
           <DismissibleInfoPanel
             id="guide-optics-calculator-note"
-            icon={<Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />}
-            className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed"
+            icon={<Info className="w-4 h-4 text-neutral-200 shrink-0 mt-0.5" />}
+            className="bg-neutral-950/60 border border-neutral-800 rounded-md p-3 flex items-start gap-2 text-[11px] text-neutral-400 leading-relaxed"
           >
             Riassume tutti i parametri ottici della coppia telescopio + oculare (con riduttore o Barlow opzionali).
-            <strong className="text-slate-300"> Rapporto Focale</strong>: più basso vuol dire immagini più luminose ma
-            minor ingrandimento. <strong className="text-slate-300">Pupilla d'Uscita</strong>: oltre 6-7 mm supera la
+            <strong className="text-neutral-300"> Rapporto Focale</strong>: più basso vuol dire immagini più luminose ma
+            minor ingrandimento. <strong className="text-neutral-300">Pupilla d'Uscita</strong>: oltre 6-7 mm supera la
             pupilla dilatata dell'occhio (luce sprecata), sotto 0,5 mm l'immagine diventa scura.{' '}
-            <strong className="text-slate-300">Max Utile Teorico</strong>: oltre questo ingrandimento l'immagine si
-            sfoca senza mostrare più dettagli. <strong className="text-slate-300">Potere Risolutivo</strong> (Limite
+            <strong className="text-neutral-300">Max Utile Teorico</strong>: oltre questo ingrandimento l'immagine si
+            sfoca senza mostrare più dettagli. <strong className="text-neutral-300">Potere Risolutivo</strong> (Limite
             di Dawes): minima separazione angolare tra due stelle doppie che riesci a distinguere.{' '}
-            <strong className="text-slate-300">Campo Reale</strong>: quanto cielo inquadri nell'oculare.
+            <strong className="text-neutral-300">Campo Reale</strong>: quanto cielo inquadri nell'oculare.
           </DismissibleInfoPanel>
 
           <div className="space-y-3">
             <div>
-              <div className="flex justify-between text-xs text-slate-300 mb-1">
-                <span>Lunghezza Focale Telescopio: <strong className="text-amber-400">{opticsFocalLength} mm</strong></span>
+              <div className="flex justify-between text-xs text-neutral-300 mb-1">
+                <span>Lunghezza Focale Telescopio: <strong className="text-neutral-200">{opticsFocalLength} mm</strong></span>
               </div>
               <input
                 type="range"
@@ -285,13 +276,13 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 step={50}
                 value={opticsFocalLength}
                 onChange={(e) => setOpticsFocalLength(Number(e.target.value))}
-                className="w-full accent-amber-500 cursor-pointer"
+                className="w-full cursor-pointer"
               />
             </div>
 
             <div>
-              <div className="flex justify-between text-xs text-slate-300 mb-1">
-                <span>Apertura (Diametro Obiettivo): <strong className="text-cyan-400">{opticsAperture} mm</strong></span>
+              <div className="flex justify-between text-xs text-neutral-300 mb-1">
+                <span>Apertura (Diametro Obiettivo): <strong className="text-neutral-200">{opticsAperture} mm</strong></span>
               </div>
               <input
                 type="range"
@@ -300,13 +291,13 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 step={10}
                 value={opticsAperture}
                 onChange={(e) => setOpticsAperture(Number(e.target.value))}
-                className="w-full accent-cyan-500 cursor-pointer"
+                className="w-full cursor-pointer"
               />
             </div>
 
             <div>
-              <div className="flex justify-between text-xs text-slate-300 mb-1">
-                <span>Focale dell'Oculare: <strong className="text-indigo-300">{opticsEyepieceFocal} mm</strong></span>
+              <div className="flex justify-between text-xs text-neutral-300 mb-1">
+                <span>Focale dell'Oculare: <strong className="text-neutral-100">{opticsEyepieceFocal} mm</strong></span>
               </div>
               <input
                 type="range"
@@ -315,13 +306,13 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 step={0.5}
                 value={opticsEyepieceFocal}
                 onChange={(e) => setOpticsEyepieceFocal(Number(e.target.value))}
-                className="w-full accent-indigo-500 cursor-pointer"
+                className="w-full cursor-pointer"
               />
             </div>
 
             <div>
-              <div className="flex justify-between text-xs text-slate-300 mb-1">
-                <span>Campo Apparente Oculare: <strong className="text-indigo-300">{opticsAfov}°</strong></span>
+              <div className="flex justify-between text-xs text-neutral-300 mb-1">
+                <span>Campo Apparente Oculare: <strong className="text-neutral-100">{opticsAfov}°</strong></span>
               </div>
               <input
                 type="range"
@@ -330,13 +321,13 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 step={1}
                 value={opticsAfov}
                 onChange={(e) => setOpticsAfov(Number(e.target.value))}
-                className="w-full accent-indigo-500 cursor-pointer"
+                className="w-full cursor-pointer"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-xs text-slate-300 mb-1">Riduttore di Focale</div>
+                <div className="text-xs text-neutral-300 mb-1">Riduttore di Focale</div>
                 <select value={opticsReducer} onChange={(e) => setOpticsReducer(Number(e.target.value))} className={selectClass}>
                   {REDUCER_OPTIONS.map((r) => (
                     <option key={r} value={r}>
@@ -346,7 +337,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 </select>
               </div>
               <div>
-                <div className="text-xs text-slate-300 mb-1">Lente di Barlow</div>
+                <div className="text-xs text-neutral-300 mb-1">Lente di Barlow</div>
                 <select value={opticsBarlow} onChange={(e) => setOpticsBarlow(Number(e.target.value))} className={selectClass}>
                   {VISUAL_BARLOW_OPTIONS.map((b) => (
                     <option key={b} value={b}>
@@ -359,50 +350,49 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
           </div>
 
           {/* Results Grid */}
-          <div className="grid grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
+          <div className="grid grid-cols-3 gap-3 bg-neutral-950 p-4 rounded-md border border-neutral-800 text-center">
             <div>
-              <div className="text-[10px] text-slate-400">Rapporto Focale</div>
-              <div className="text-lg font-black text-amber-400">f/{focalRatio}</div>
+              <div className="text-[10px] text-neutral-400">Rapporto Focale</div>
+              <div className="text-lg font-medium text-neutral-200">f/{focalRatio}</div>
             </div>
             <div>
-              <div className="text-[10px] text-slate-400">Ingrandimento</div>
-              <div className="text-lg font-black text-amber-400">{magnification}x</div>
+              <div className="text-[10px] text-neutral-400">Ingrandimento</div>
+              <div className="text-lg font-medium text-neutral-200">{magnification}x</div>
             </div>
             <div>
-              <div className="text-[10px] text-slate-400">Pupilla Uscita</div>
-              <div className="text-lg font-black text-cyan-300">{exitPupil} mm</div>
+              <div className="text-[10px] text-neutral-400">Pupilla Uscita</div>
+              <div className="text-lg font-medium text-neutral-100">{exitPupil} mm</div>
             </div>
             <div>
-              <div className="text-[10px] text-slate-400">Max Utile Teorico</div>
-              <div className="text-lg font-black text-indigo-300">{maxUsefulMag}x</div>
+              <div className="text-[10px] text-neutral-400">Max Utile Teorico</div>
+              <div className="text-lg font-medium text-neutral-100">{maxUsefulMag}x</div>
             </div>
             <div>
-              <div className="text-[10px] text-slate-400">Potere Risolutivo</div>
-              <div className="text-lg font-black text-cyan-300">{dawesLimit}"</div>
+              <div className="text-[10px] text-neutral-400">Potere Risolutivo</div>
+              <div className="text-lg font-medium text-neutral-100">{dawesLimit}"</div>
             </div>
             <div>
-              <div className="text-[10px] text-slate-400">Campo Reale</div>
-              <div className="text-lg font-black text-indigo-300">{trueFovDeg}°</div>
+              <div className="text-[10px] text-neutral-400">Campo Reale</div>
+              <div className="text-lg font-medium text-neutral-100">{trueFovDeg}°</div>
             </div>
           </div>
-          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center text-xs text-slate-300">
-            Magnitudine stellare limite osservabile: <strong className="text-emerald-400">{limitingMagnitude} m</strong>
+          <div className="bg-neutral-950 p-3 rounded-md border border-neutral-800 text-center text-xs text-neutral-300">
+            Magnitudine stellare limite osservabile: <strong className="text-neutral-200">{limitingMagnitude} m</strong>
           </div>
         </div>
 
         {/* Angular Resolution (Rayleigh) */}
-        <div className="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Aperture className="w-5 h-5 text-cyan-400" />
-            <h3 className="text-base font-bold text-slate-100">
-              Risoluzione Angolare
+        <div className="lg:col-span-6 bg-neutral-900/50 border border-neutral-800 rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+            <h3 className="text-base font-semibold text-neutral-100">
+              Risoluzione angolare
             </h3>
           </div>
 
           <DismissibleInfoPanel
             id="guide-rayleigh-calculator-note"
-            icon={<Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />}
-            className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed"
+            icon={<Info className="w-4 h-4 text-neutral-200 shrink-0 mt-0.5" />}
+            className="bg-neutral-950/60 border border-neutral-800 rounded-md p-3 flex items-start gap-2 text-[11px] text-neutral-400 leading-relaxed"
           >
             Calcola, con il criterio di Rayleigh (1.22 λ/D), la minima separazione angolare tra due dettagli (o due
             stelle doppie) che il tuo telescopio può teoricamente distinguere a una data lunghezza d'onda. Valori più
@@ -410,8 +400,8 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
           </DismissibleInfoPanel>
 
           <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>Diametro / Apertura: <strong className="text-cyan-400">{rayleighAperture} mm</strong></span>
+            <div className="flex justify-between text-xs text-neutral-300 mb-1">
+              <span>Diametro / Apertura: <strong className="text-neutral-200">{rayleighAperture} mm</strong></span>
             </div>
             <input
               type="range"
@@ -420,13 +410,13 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               step={10}
               value={rayleighAperture}
               onChange={(e) => setRayleighAperture(Number(e.target.value))}
-              className="w-full accent-cyan-500 cursor-pointer"
+              className="w-full cursor-pointer"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="text-xs text-slate-300 mb-1">Lunghezza d'Onda</div>
+              <div className="text-xs text-neutral-300 mb-1">Lunghezza d'Onda</div>
               <select
                 value={rayleighWavelength}
                 onChange={(e) => setRayleighWavelength(Number(e.target.value))}
@@ -440,7 +430,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               </select>
             </div>
             <div>
-              <div className="text-xs text-slate-300 mb-1">Personalizzata (nm)</div>
+              <div className="text-xs text-neutral-300 mb-1">Personalizzata (nm)</div>
               <input
                 type="number"
                 value={rayleighWavelength}
@@ -450,33 +440,32 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
             </div>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
-            <div className="text-[10px] text-slate-400">Risoluzione Angolare</div>
-            <div className="text-2xl font-black text-cyan-300">{rayleighArcsec}"</div>
+          <div className="bg-neutral-950 p-4 rounded-md border border-neutral-800 text-center">
+            <div className="text-[10px] text-neutral-400">Risoluzione angolare</div>
+            <div className="text-2xl font-medium text-neutral-100">{rayleighArcsec}"</div>
           </div>
         </div>
 
         {/* True Field of View (standalone) */}
-        <div className="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Telescope className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-base font-bold text-slate-100">
-              Campo Reale Oculare
+        <div className="lg:col-span-6 bg-neutral-900/50 border border-neutral-800 rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+            <h3 className="text-base font-semibold text-neutral-100">
+              Campo reale dell'oculare
             </h3>
           </div>
 
           <DismissibleInfoPanel
             id="guide-true-fov-calculator-note"
-            icon={<Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />}
-            className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed"
+            icon={<Info className="w-4 h-4 text-neutral-200 shrink-0 mt-0.5" />}
+            className="bg-neutral-950/60 border border-neutral-800 rounded-md p-3 flex items-start gap-2 text-[11px] text-neutral-400 leading-relaxed"
           >
             Calcola quanta porzione di cielo (in gradi) inquadri realmente con un dato oculare sul tuo telescopio,
             utile per capire se un oggetto esteso (ammasso, nebulosa, galassia) entrerà per intero nel campo visivo.
           </DismissibleInfoPanel>
 
           <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>Focale Telescopio: <strong className="text-amber-400">{fovFocalLength} mm</strong></span>
+            <div className="flex justify-between text-xs text-neutral-300 mb-1">
+              <span>Focale Telescopio: <strong className="text-neutral-200">{fovFocalLength} mm</strong></span>
             </div>
             <input
               type="range"
@@ -485,13 +474,13 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               step={50}
               value={fovFocalLength}
               onChange={(e) => setFovFocalLength(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
+              className="w-full cursor-pointer"
             />
           </div>
 
           <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>Focale Oculare: <strong className="text-indigo-300">{fovEyepieceFocal} mm</strong></span>
+            <div className="flex justify-between text-xs text-neutral-300 mb-1">
+              <span>Focale Oculare: <strong className="text-neutral-100">{fovEyepieceFocal} mm</strong></span>
             </div>
             <input
               type="range"
@@ -500,13 +489,13 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               step={0.5}
               value={fovEyepieceFocal}
               onChange={(e) => setFovEyepieceFocal(Number(e.target.value))}
-              className="w-full accent-indigo-500 cursor-pointer"
+              className="w-full cursor-pointer"
             />
           </div>
 
           <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
-              <span>Campo Apparente Oculare: <strong className="text-indigo-300">{fovAfov}°</strong></span>
+            <div className="flex justify-between text-xs text-neutral-300 mb-1">
+              <span>Campo Apparente Oculare: <strong className="text-neutral-100">{fovAfov}°</strong></span>
             </div>
             <input
               type="range"
@@ -515,18 +504,18 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               step={1}
               value={fovAfov}
               onChange={(e) => setFovAfov(Number(e.target.value))}
-              className="w-full accent-indigo-500 cursor-pointer"
+              className="w-full cursor-pointer"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
+          <div className="grid grid-cols-2 gap-3 bg-neutral-950 p-4 rounded-md border border-neutral-800 text-center">
             <div>
-              <div className="text-[10px] text-slate-400">Ingrandimento</div>
-              <div className="text-xl font-black text-amber-400">{Math.round(fovMagnification)}x</div>
+              <div className="text-[10px] text-neutral-400">Ingrandimento</div>
+              <div className="text-xl font-medium text-neutral-200">{Math.round(fovMagnification)}x</div>
             </div>
             <div>
-              <div className="text-[10px] text-slate-400">Campo Reale</div>
-              <div className="text-xl font-black text-indigo-300">{fovTrueFov}°</div>
+              <div className="text-[10px] text-neutral-400">Campo Reale</div>
+              <div className="text-xl font-medium text-neutral-100">{fovTrueFov}°</div>
             </div>
           </div>
         </div>
@@ -538,31 +527,29 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
       <>
       {/* Section: Deep Sky and Planetary Imaging Tools */}
       <div className="flex items-center gap-2 pt-2">
-        <Camera className="w-4 h-4 text-amber-400" />
-        <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300">
+        <h3 className="section-title">
           Strumenti per Fotografia Deep e Riprese Planetarie
         </h3>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Deep Sky Sampling */}
-        <div className="lg:col-span-12 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Camera className="w-5 h-5 text-amber-400" />
-            <h3 className="text-base font-bold text-slate-100">
-              Campionamento Deep Sky
+        <div className="lg:col-span-12 bg-neutral-900/50 border border-neutral-800 rounded-lg p-6 space-y-5">
+          <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+            <h3 className="text-base font-semibold text-neutral-100">
+              Campionamento deep-sky
             </h3>
           </div>
 
           <DismissibleInfoPanel
             id="guide-deep-sky-sampling-note"
-            icon={<Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />}
-            className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed"
+            icon={<Info className="w-4 h-4 text-neutral-200 shrink-0 mt-0.5" />}
+            className="bg-neutral-950/60 border border-neutral-800 rounded-md p-3 flex items-start gap-2 text-[11px] text-neutral-400 leading-relaxed"
           >
             Calcola la scala immagine del tuo sistema di ripresa (secondi d'arco per pixel) e la confronta con il
-            seeing tipico del tuo cielo: <strong className="text-amber-400">Sottocampionato</strong> significa
-            immagine sfocata/pixelosa con dettaglio perso; <strong className="text-rose-400">Sovracampionato</strong>{' '}
-            significa rumore inutile e guida più critica senza vantaggi reali; <strong className="text-emerald-400">
+            seeing tipico del tuo cielo: <strong className="text-neutral-200">Sottocampionato</strong> significa
+            immagine sfocata/pixelosa con dettaglio perso; <strong className="text-warn">Sovracampionato</strong>{' '}
+            significa rumore inutile e guida più critica senza vantaggi reali; <strong className="text-neutral-200">
             Ottimale</strong> è il range consigliato per il tuo seeing. A destra trovi lo stesso calcolo per il
             sistema di guida, per verificare che la sua risoluzione sia adeguata rispetto all'imaging principale.
           </DismissibleInfoPanel>
@@ -570,11 +557,11 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Imaging setup */}
             <div className="space-y-3">
-              <div className="text-xs font-bold text-slate-300 uppercase tracking-wide">Sistema di Ripresa</div>
+              <div className="text-xs font-semibold text-neutral-300 uppercase tracking-wide">Sistema di Ripresa</div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="text-[11px] text-slate-400 mb-1">Focale (mm)</div>
+                  <div className="text-[11px] text-neutral-400 mb-1">Focale (mm)</div>
                   <input
                     type="number"
                     value={deepFocalLength}
@@ -583,7 +570,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                   />
                 </div>
                 <div>
-                  <div className="text-[11px] text-slate-400 mb-1">Binning</div>
+                  <div className="text-[11px] text-neutral-400 mb-1">Binning</div>
                   <select value={deepBinning} onChange={(e) => setDeepBinning(Number(e.target.value))} className={selectClass}>
                     {[1, 2, 3, 4].map((b) => (
                       <option key={b} value={b}>{b}x{b}</option>
@@ -593,7 +580,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               </div>
 
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Pixel Pitch Manuale (µm)</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Pixel Pitch Manuale (µm)</div>
                 <input
                   type="number"
                   step="0.01"
@@ -605,17 +592,17 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               </div>
 
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Oppure Scegli una Camera (ha priorità)</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Oppure Scegli una Camera (ha priorità)</div>
                 <CameraSelect cameras={ASTRO_CAMERAS} value={deepCameraIndex} onChange={setDeepCameraIndex} />
               </div>
 
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
-                <div className="text-[10px] text-slate-400">Scala Immagine (ignora il seeing)</div>
-                <div className="text-xl font-black text-amber-400">{deepScale}"/px</div>
+              <div className="bg-neutral-950 p-3 rounded-md border border-neutral-800 text-center">
+                <div className="text-[10px] text-neutral-400">Scala Immagine (ignora il seeing)</div>
+                <div className="text-xl font-medium text-neutral-200">{deepScale}"/px</div>
               </div>
 
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Seleziona il tuo Seeing</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Seleziona il tuo Seeing</div>
                 <select
                   value={deepSeeingIndex}
                   onChange={(e) => setDeepSeeingIndex(Number(e.target.value))}
@@ -627,10 +614,10 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 </select>
               </div>
 
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+              <div className="bg-neutral-950 p-3 rounded-md border border-neutral-800 flex items-center justify-between text-xs">
                 <div>
-                  <div className="text-[10px] text-slate-400">Range Suggerito</div>
-                  <div className="font-bold text-slate-200">{deepRangeMin}" - {deepRangeMax}"/px</div>
+                  <div className="text-[10px] text-neutral-400">Range Suggerito</div>
+                  <div className="font-semibold text-neutral-200">{deepRangeMin}" - {deepRangeMax}"/px</div>
                 </div>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getSamplingBadgeClass(deepRating)}`}>
                   {deepRating}
@@ -640,11 +627,11 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
 
             {/* Guide system comparison */}
             <div className="space-y-3">
-              <div className="text-xs font-bold text-slate-300 uppercase tracking-wide">Sistema di Guida (confronto)</div>
+              <div className="text-xs font-semibold text-neutral-300 uppercase tracking-wide">Sistema di Guida (confronto)</div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="text-[11px] text-slate-400 mb-1">Focale Guida (mm)</div>
+                  <div className="text-[11px] text-neutral-400 mb-1">Focale Guida (mm)</div>
                   <input
                     type="number"
                     value={guideFocalLength}
@@ -653,7 +640,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                   />
                 </div>
                 <div>
-                  <div className="text-[11px] text-slate-400 mb-1">Binning Guida</div>
+                  <div className="text-[11px] text-neutral-400 mb-1">Binning Guida</div>
                   <select value={guideBinning} onChange={(e) => setGuideBinning(Number(e.target.value))} className={selectClass}>
                     {[1, 2, 3, 4].map((b) => (
                       <option key={b} value={b}>{b}x{b}</option>
@@ -663,7 +650,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               </div>
 
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Pixel Pitch Manuale Guida (µm)</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Pixel Pitch Manuale Guida (µm)</div>
                 <input
                   type="number"
                   step="0.01"
@@ -675,16 +662,16 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               </div>
 
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Oppure Scegli una Camera di Guida</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Oppure Scegli una Camera di Guida</div>
                 <CameraSelect cameras={ASTRO_CAMERAS} value={guideCameraIndex} onChange={setGuideCameraIndex} />
               </div>
 
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
-                <div className="text-[10px] text-slate-400">Scala Immagine Guida</div>
-                <div className="text-xl font-black text-cyan-300">{guideScale}"/px</div>
+              <div className="bg-neutral-950 p-3 rounded-md border border-neutral-800 text-center">
+                <div className="text-[10px] text-neutral-400">Scala Immagine Guida</div>
+                <div className="text-xl font-medium text-neutral-100">{guideScale}"/px</div>
               </div>
 
-              <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3 text-xs text-slate-200 leading-relaxed">
+              <div className="bg-neutral-900/40 border border-neutral-700 rounded-md p-3 text-xs text-neutral-200 leading-relaxed">
                 {guideComparisonText}
               </div>
             </div>
@@ -692,18 +679,17 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
         </div>
 
         {/* Planetary Sampling */}
-        <div className="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Crosshair className="w-5 h-5 text-cyan-400" />
-            <h3 className="text-base font-bold text-slate-100">
-              Campionamento Imaging Planetario
+        <div className="lg:col-span-6 bg-neutral-900/50 border border-neutral-800 rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+            <h3 className="text-base font-semibold text-neutral-100">
+              Campionamento planetario
             </h3>
           </div>
 
           <DismissibleInfoPanel
             id="guide-planetary-sampling-note"
-            icon={<Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />}
-            className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed"
+            icon={<Info className="w-4 h-4 text-neutral-200 shrink-0 mt-0.5" />}
+            className="bg-neutral-950/60 border border-neutral-800 rounded-md p-3 flex items-start gap-2 text-[11px] text-neutral-400 leading-relaxed"
           >
             Calcola la lunghezza focale e il rapporto focale ideali per sfruttare al meglio il potere risolutivo del
             telescopio nelle riprese planetarie, dove si lavora molto più ingranditi rispetto al deep sky. Più in
@@ -713,7 +699,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <div className="text-[11px] text-slate-400 mb-1">λ Filtro (nm)</div>
+              <div className="text-[11px] text-neutral-400 mb-1">λ Filtro (nm)</div>
               <input
                 type="number"
                 value={planWavelength}
@@ -722,7 +708,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               />
             </div>
             <div>
-              <div className="text-[11px] text-slate-400 mb-1">Diametro (mm)</div>
+              <div className="text-[11px] text-neutral-400 mb-1">Diametro (mm)</div>
               <input
                 type="number"
                 value={planAperture}
@@ -731,7 +717,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               />
             </div>
             <div>
-              <div className="text-[11px] text-slate-400 mb-1">Pixel (µm)</div>
+              <div className="text-[11px] text-neutral-400 mb-1">Pixel (µm)</div>
               <input
                 type="number"
                 step="0.01"
@@ -742,22 +728,22 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
+          <div className="grid grid-cols-2 gap-3 bg-neutral-950 p-4 rounded-md border border-neutral-800 text-center">
             <div>
-              <div className="text-[10px] text-slate-400">Focale Risultante Ideale</div>
-              <div className="text-lg font-black text-cyan-300">{planIdealFocalLength} mm</div>
+              <div className="text-[10px] text-neutral-400">Focale Risultante Ideale</div>
+              <div className="text-lg font-medium text-neutral-100">{planIdealFocalLength} mm</div>
             </div>
             <div>
-              <div className="text-[10px] text-slate-400">Rapporto Focale Ideale</div>
-              <div className="text-lg font-black text-cyan-300">f/{planIdealFocalRatio}</div>
+              <div className="text-[10px] text-neutral-400">Rapporto Focale Ideale</div>
+              <div className="text-lg font-medium text-neutral-100">f/{planIdealFocalRatio}</div>
             </div>
           </div>
 
-          <div className="border-t border-slate-800 pt-3 space-y-3">
-            <div className="text-xs font-bold text-slate-300 uppercase tracking-wide">Quale Barlow ti serve?</div>
+          <div className="border-t border-neutral-800 pt-3 space-y-3">
+            <div className="text-xs font-semibold text-neutral-300 uppercase tracking-wide">Quale Barlow ti serve?</div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Focale Nativa (mm)</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Focale Nativa (mm)</div>
                 <input
                   type="number"
                   value={planNativeFocalLength}
@@ -766,7 +752,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 />
               </div>
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Lente di Barlow</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Lente di Barlow</div>
                 <select value={planBarlow} onChange={(e) => setPlanBarlow(Number(e.target.value))} className={selectClass}>
                   {PLANETARY_BARLOW_OPTIONS.map((b) => (
                     <option key={b} value={b}>Barlow {b}x</option>
@@ -774,26 +760,25 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 </select>
               </div>
             </div>
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
-              <div className="text-[10px] text-slate-400">Focale Risultante con Barlow</div>
-              <div className="text-lg font-black text-amber-400">{planBarlowResultFocalLength} mm</div>
+            <div className="bg-neutral-950 p-3 rounded-md border border-neutral-800 text-center">
+              <div className="text-[10px] text-neutral-400">Focale Risultante con Barlow</div>
+              <div className="text-lg font-medium text-neutral-200">{planBarlowResultFocalLength} mm</div>
             </div>
           </div>
         </div>
 
         {/* NPF Rule Exposure */}
-        <div className="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Timer className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-base font-bold text-slate-100">
-              Esposizione via Regola NPF
+        <div className="lg:col-span-6 bg-neutral-900/50 border border-neutral-800 rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+            <h3 className="text-base font-semibold text-neutral-100">
+              Posa massima con la regola NPF
             </h3>
           </div>
 
           <DismissibleInfoPanel
             id="guide-npf-exposure-note"
-            icon={<Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />}
-            className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed"
+            icon={<Info className="w-4 h-4 text-neutral-200 shrink-0 mt-0.5" />}
+            className="bg-neutral-950/60 border border-neutral-800 rounded-md p-3 flex items-start gap-2 text-[11px] text-neutral-400 leading-relaxed"
           >
             Calcola il tempo di posa massimo (in secondi) oltre il quale le stelle iniziano a comparire come tratti
             (star trailing) invece che come punti, tenendo conto di focale, apertura e dimensione del pixel: è più
@@ -803,7 +788,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <div className="text-[11px] text-slate-400 mb-1">Focale (mm)</div>
+              <div className="text-[11px] text-neutral-400 mb-1">Focale (mm)</div>
               <input
                 type="number"
                 value={npfFocalLength}
@@ -812,7 +797,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               />
             </div>
             <div>
-              <div className="text-[11px] text-slate-400 mb-1">Apertura (f/)</div>
+              <div className="text-[11px] text-neutral-400 mb-1">Apertura (f/)</div>
               <input
                 type="number"
                 step="0.1"
@@ -822,7 +807,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
               />
             </div>
             <div>
-              <div className="text-[11px] text-slate-400 mb-1">Pixel Pitch (µm)</div>
+              <div className="text-[11px] text-neutral-400 mb-1">Pixel Pitch (µm)</div>
               <input
                 type="number"
                 step="0.01"
@@ -833,18 +818,18 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
             </div>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
-            <div className="text-[10px] text-slate-400">Tempo Massimo di Esposizione</div>
-            <div className="text-2xl font-black text-indigo-300">{npfExposure}s</div>
+          <div className="bg-neutral-950 p-4 rounded-md border border-neutral-800 text-center">
+            <div className="text-[10px] text-neutral-400">Tempo Massimo di Esposizione</div>
+            <div className="text-2xl font-medium text-neutral-100">{npfExposure}s</div>
           </div>
 
-          <div className="border-t border-slate-800 pt-3 space-y-3">
-            <div className="text-xs font-bold text-slate-300 uppercase tracking-wide">
+          <div className="border-t border-neutral-800 pt-3 space-y-3">
+            <div className="text-xs font-semibold text-neutral-300 uppercase tracking-wide">
               Non conosci il Pixel Pitch? Calcolalo
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Lato Lungo Sensore (mm)</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Lato Lungo Sensore (mm)</div>
                 <input
                   type="number"
                   step="0.1"
@@ -854,7 +839,7 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 />
               </div>
               <div>
-                <div className="text-[11px] text-slate-400 mb-1">Lato Lungo Immagine (px)</div>
+                <div className="text-[11px] text-neutral-400 mb-1">Lato Lungo Immagine (px)</div>
                 <input
                   type="number"
                   value={npfImageWidthPx}
@@ -863,8 +848,8 @@ export const TabAstroGuide: React.FC<TabAstroGuideProps> = ({ section }) => {
                 />
               </div>
             </div>
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center text-xs">
-              Pixel Pitch calcolato: <strong className="text-emerald-400">{npfHelperPixelPitch} µm</strong>
+            <div className="bg-neutral-950 p-3 rounded-md border border-neutral-800 text-center text-xs">
+              Pixel Pitch calcolato: <strong className="text-neutral-200">{npfHelperPixelPitch} µm</strong>
             </div>
           </div>
         </div>

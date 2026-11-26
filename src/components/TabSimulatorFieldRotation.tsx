@@ -3,7 +3,6 @@ import { UserLocation } from '../types';
 import { Sparkles, Info, Camera } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
 import { SimulatorStage } from './SimulatorStage';
-import { ApexIcon } from './ApexIcon';
 
 // The Andromeda Galaxy (M31) is the reference target: large, elongated, and
 // the classic first deep-sky subject. Its high declination also means that at
@@ -24,6 +23,12 @@ const FIELD_WIDTH_DEG = 3.5;
 const FIELD_HEIGHT_DEG = 2.33;
 
 const DEG = Math.PI / 180;
+
+// The time slider and the sampled rotation path share the same grid, so the
+// value under the slider is always one of the samples.
+const MAX_HOURS = 4;
+const SAMPLE_STEP_H = 0.02;
+const SAMPLE_COUNT = Math.round(MAX_HOURS / SAMPLE_STEP_H) + 1;
 
 interface SkyPosition {
   altitude: number;
@@ -180,6 +185,65 @@ interface TabSimulatorFieldRotationProps {
   location: UserLocation;
 }
 
+interface RotationChartProps {
+  rotation: number[];
+  hours: number;
+  reversals: number[];
+  dimmed: boolean;
+}
+
+/** Field rotation over the whole sequence, with the slider position marked. */
+const RotationChart: React.FC<RotationChartProps> = ({ rotation, hours, reversals, dimmed }) => {
+  const W = 600;
+  const H = 96;
+  const PAD_L = 34;
+  const PAD_R = 8;
+  const PAD_T = 8;
+  const PAD_B = 18;
+  const min = Math.min(0, ...rotation);
+  const max = Math.max(0, ...rotation);
+  const span = Math.max(1, max - min);
+  const x = (h: number) => PAD_L + (h / MAX_HOURS) * (W - PAD_L - PAD_R);
+  const y = (v: number) => PAD_T + (1 - (v - min) / span) * (H - PAD_T - PAD_B);
+  const d = rotation
+    .map((v, i) => `${i ? 'L' : 'M'}${x(i * SAMPLE_STEP_H).toFixed(1)},${y(v).toFixed(1)}`)
+    .join('');
+  const current = rotation[Math.min(rotation.length - 1, Math.round(hours / SAMPLE_STEP_H))];
+
+  return (
+    <figure className={dimmed ? 'opacity-40' : undefined}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block" role="img" aria-label="Rotazione del campo nel tempo">
+        <line x1={PAD_L} x2={W - PAD_R} y1={y(0)} y2={y(0)} stroke="#262626" />
+        <text x={PAD_L - 6} y={y(max) + 3} textAnchor="end" fontSize="9" fill="#737373">
+          {max.toFixed(0)}°
+        </text>
+        <text x={PAD_L - 6} y={y(0) + 3} textAnchor="end" fontSize="9" fill="#737373">
+          0°
+        </text>
+        {min < -10 && (
+          <text x={PAD_L - 6} y={y(min) + 3} textAnchor="end" fontSize="9" fill="#737373">
+            {min.toFixed(0)}°
+          </text>
+        )}
+        {[0, 1, 2, 3, 4].map((h) => (
+          <text key={h} x={x(h)} y={H - 4} textAnchor="middle" fontSize="9" fill="#737373">
+            {h} h
+          </text>
+        ))}
+        {reversals.map((r) => (
+          <line key={r} x1={x(r)} x2={x(r)} y1={PAD_T} y2={H - PAD_B} stroke="#525252" strokeDasharray="2 3" />
+        ))}
+        <path d={d} fill="none" stroke="#b89a6a" strokeWidth="1.5" />
+        <line x1={x(hours)} x2={x(hours)} y1={PAD_T} y2={H - PAD_B} stroke="#a3a3a3" />
+        <circle cx={x(hours)} cy={y(current)} r="3" fill="#f5f5f5" />
+      </svg>
+      <figcaption className="text-[10px] text-neutral-500 mt-1">
+        Rotazione del campo in alt-az lungo le 4 ore. Le linee tratteggiate segnano dove cambia verso.
+      </figcaption>
+    </figure>
+  );
+};
+
 export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps> = ({ location }) => {
   const [hours, setHours] = useState<number>(0);
   const [mount, setMount] = useState<'altaz' | 'equatorial'>('altaz');
@@ -190,22 +254,68 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
   const skyRef = useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = useState({ w: 720, h: 440 });
 
-  const start = useMemo(() => skyPosition(START_HOUR_ANGLE, location.latitude), [location.latitude]);
   const now = useMemo(
     () => skyPosition(START_HOUR_ANGLE + hours, location.latitude),
     [hours, location.latitude]
   );
 
-  // Field rotation is simply how much the parallactic angle has changed; an
-  // equatorial mount follows that rotation mechanically, so its field is fixed.
-  let rotationDeg = now.parallactic - start.parallactic;
-  if (rotationDeg > 180) rotationDeg -= 360;
-  if (rotationDeg < -180) rotationDeg += 360;
+  // Field rotation is how much the parallactic angle has changed since the
+  // start. It is sampled along the whole sequence and unwrapped, because it is
+  // not monotonic: its rate goes as cos(azimuth)/cos(altitude), so it stops and
+  // reverses each time the target crosses due east or due west, and it races
+  // through nearly 180 degrees when the target passes close to the zenith.
+  // A plain "now minus start" would hide both and could even jump by 360.
+  const path = useMemo(() => {
+    const rotation: number[] = [];
+    const altitude: number[] = [];
+    let prev = skyPosition(START_HOUR_ANGLE, location.latitude).parallactic;
+    let acc = 0;
+    for (let i = 0; i < SAMPLE_COUNT; i++) {
+      const p = skyPosition(START_HOUR_ANGLE + i * SAMPLE_STEP_H, location.latitude);
+      let d = p.parallactic - prev;
+      if (d > 180) d -= 360;
+      if (d < -180) d += 360;
+      acc += d;
+      prev = p.parallactic;
+      rotation.push(acc);
+      altitude.push(p.altitude);
+    }
+    return { rotation, altitude, maxAltitude: Math.max(...altitude) };
+  }, [location.latitude]);
+
+  const sampleIndex = Math.min(SAMPLE_COUNT - 1, Math.round(hours / SAMPLE_STEP_H));
+  const rotationDeg = path.rotation[sampleIndex];
   const appliedRotation = mount === 'altaz' ? rotationDeg : 0;
+
+  // Angle actually swept so far, back-and-forth included: that, not the net
+  // rotation, is the length of the arc a star draws in a single long exposure.
+  let sweptDeg = 0;
+  for (let i = 1; i <= sampleIndex; i++) sweptDeg += Math.abs(path.rotation[i] - path.rotation[i - 1]);
+  const appliedSwept = mount === 'altaz' ? sweptDeg : 0;
+
+  // Reversal points (rotation rate changes sign) inside the window.
+  const reversals = useMemo(() => {
+    const out: number[] = [];
+    for (let i = 1; i < SAMPLE_COUNT - 1; i++) {
+      const a = path.rotation[i] - path.rotation[i - 1];
+      const b = path.rotation[i + 1] - path.rotation[i];
+      if (a * b < 0) out.push(i * SAMPLE_STEP_H);
+    }
+    return out;
+  }, [path]);
+
+  // Fastest rotation in the window, in degrees per minute.
+  const peakRate = useMemo(() => {
+    let max = 0;
+    for (let i = 1; i < SAMPLE_COUNT; i++) {
+      max = Math.max(max, Math.abs(path.rotation[i] - path.rotation[i - 1]) / (SAMPLE_STEP_H * 60));
+    }
+    return max;
+  }, [path]);
 
   // Trailing suffered by a star at the corner of the frame.
   const halfDiagonalDeg = Math.hypot(FIELD_WIDTH_DEG, FIELD_HEIGHT_DEG) / 2;
-  const trailArcmin = Math.abs(appliedRotation) * DEG * halfDiagonalDeg * 60;
+  const trailArcmin = appliedSwept * DEG * halfDiagonalDeg * 60;
 
   const rect = useMemo(() => {
     const w = size.w * 0.62;
@@ -267,13 +377,15 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
       ctx.restore();
     };
 
-    if (longExposure && Math.abs(appliedRotation) > 0.05) {
-      // Stack the whole tracked sequence: stars smear into arcs exactly as they
-      // would on a single long sub-exposure.
-      const steps = 90;
+    if (longExposure && mount === 'altaz' && sampleIndex > 0) {
+      // Stack the tracked sequence along its real path: stars smear into arcs
+      // exactly as on a single long exposure, back-and-forth included. Each
+      // frame gets the same share of the exposure, so where the field races
+      // (near the zenith) the arc is fainter, as it is on a real sensor.
+      const alpha = Math.min(0.5, 5 / (sampleIndex + 1));
       ctx.globalCompositeOperation = 'lighter';
-      for (let i = 0; i <= steps; i++) {
-        drawAt((appliedRotation * i) / steps, 0.055);
+      for (let i = 0; i <= sampleIndex; i++) {
+        drawAt(path.rotation[i], alpha);
       }
       ctx.globalCompositeOperation = 'source-over';
       drawAt(appliedRotation, 0.85);
@@ -284,12 +396,12 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
     ctx.restore();
 
     // Sensor frame
-    ctx.strokeStyle = mount === 'altaz' ? 'rgba(244, 63, 94, 0.75)' : 'rgba(52, 211, 153, 0.75)';
+    ctx.strokeStyle = mount === 'altaz' ? 'rgba(209,106,95, 0.75)' : 'rgba(229,229,229, 0.75)';
     ctx.lineWidth = 2;
     ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
 
     // Corner ticks, to make the rotation of the frame contents obvious
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.strokeStyle = 'rgba(163,163,163, 0.5)';
     ctx.lineWidth = 1;
     const tick = Math.min(rect.w, rect.h) * 0.06;
     const corners = [
@@ -305,26 +417,18 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
       ctx.lineTo(x + sx * tick, y);
       ctx.stroke();
     }
-  }, [size, rect, skySide, appliedRotation, longExposure, mount]);
+  }, [size, rect, skySide, appliedRotation, longExposure, mount, path, sampleIndex]);
 
   const belowHorizon = now.altitude < 0;
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Simulatori Interattivi
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Rotazione di Campo: Alt-Az vs Equatoriale
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Simulatore 03 / 10</div>
+          <h2 className="page-title">Rotazione di campo: alt-az o equatoriale</h2>
+          <p className="lead">
             Entrambe le montature inseguono l'oggetto e lo tengono al centro dell'inquadratura. Ma con
             un'altazimutale il campo ruota lentamente su sé stesso, ora dopo ora: fai scorrere il tempo e confronta
             le due modalità per capire perché la lunga posa deep-sky richiede una montatura equatoriale.
@@ -332,51 +436,96 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
         </div>
       </div>
 
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 sm:p-6 space-y-6">
         <div className="flex items-center gap-2 flex-wrap">
-          <Camera className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300">
+          <h3 className="section-title">
             {TARGET_NAME} da {location.name}
           </h3>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[11px] text-neutral-500">
             campo {FIELD_WIDTH_DEG}° × {FIELD_HEIGHT_DEG}° · latitudine {location.latitude.toFixed(1)}°
           </span>
         </div>
 
         <SimulatorStage
+          readouts={
+            <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Tempo trascorso</div>
+            <div className="text-xl font-medium text-neutral-200">{hours.toFixed(1)} h</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">Inseguimento continuo</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Rotazione del campo</div>
+            <div
+              className={`text-xl font-medium ${mount === 'altaz' ? 'text-warn' : 'text-neutral-200'}`}
+            >
+              {appliedRotation > 0.05 ? '+' : ''}
+              {appliedRotation.toFixed(1)}°
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">
+              {mount === 'altaz'
+                ? `rispetto all'inizio · percorsi ${sweptDeg.toFixed(1)}°`
+                : 'Compensata dalla montatura'}
+            </div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Arco agli angoli</div>
+            <div className={`text-xl font-medium ${trailArcmin > 0.5 ? 'text-warn' : 'text-neutral-200'}`}>
+              {trailArcmin.toFixed(1)}′
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">in una posa unica di {hours.toFixed(1)} h</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Altezza</div>
+            <div className="text-xl font-medium text-neutral-100">{now.altitude.toFixed(0)}°</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">azimut {now.azimuth.toFixed(0)}°</div>
+          </div>
+        </div>
+          }
           view={
-            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+            <div className="space-y-3">
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-md bg-neutral-950">
               <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-              <div className="absolute top-3 left-3 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                Dopo <span className="text-amber-300 font-bold">{hours.toFixed(1)} h</span> ·{' '}
+              <div className="absolute top-3 left-3 text-[11px] text-neutral-400 bg-neutral-950/70 border border-neutral-800 rounded-lg px-2.5 py-1.5">
+                Dopo <span className="text-neutral-100 font-semibold">{hours.toFixed(1)} h</span> ·{' '}
                 {mount === 'altaz' ? (
                   <>
                     rotazione campo{' '}
-                    <span className="text-rose-300 font-bold">{Math.abs(rotationDeg).toFixed(1)}°</span>
+                    <span className="text-warn font-semibold">
+                      {rotationDeg > 0.05 ? '+' : ''}
+                      {rotationDeg.toFixed(1)}°
+                    </span>
                   </>
                 ) : (
-                  <span className="text-emerald-300 font-bold">campo fermo (0,0°)</span>
+                  <span className="text-neutral-100 font-semibold">campo fermo (0,0°)</span>
                 )}
               </div>
+            </div>
+            <RotationChart
+              rotation={path.rotation}
+              hours={hours}
+              reversals={reversals}
+              dimmed={mount !== 'altaz'}
+            />
             </div>
           }
           controls={
             <>
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
-                    Tempo Trascorso: <strong className="text-amber-400">{hours.toFixed(1)} ore</strong>
+                    Tempo Trascorso: <strong className="text-neutral-200">{hours.toFixed(1)} ore</strong>
                   </span>
-                  <span className="text-[10px] text-slate-500">l'oggetto attraversa il meridiano</span>
+                  <span className="text-[10px] text-neutral-500">l'oggetto attraversa il meridiano</span>
                 </div>
                 <input
                   type="range"
                   min={0}
-                  max={4}
+                  max={MAX_HOURS}
                   step={0.1}
                   value={hours}
                   onChange={(e) => setHours(Number(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
               </div>
 
@@ -385,30 +534,30 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
                 <button
                   type="button"
                   onClick={() => setMount('altaz')}
-                  className={`rounded-xl border px-4 py-3 text-left transition ${
+                  className={`rounded-md border px-4 py-3 text-left transition ${
                     mount === 'altaz'
-                      ? 'bg-rose-500/10 border-rose-500/50 ring-1 ring-rose-500/30'
-                      : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                      ? 'bg-white/[0.04] border-neutral-400'
+                      : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
                   }`}
                 >
-                  <div className={`text-sm font-bold ${mount === 'altaz' ? 'text-rose-300' : 'text-slate-200'}`}>
+                  <div className={`text-sm font-semibold ${mount === 'altaz' ? 'text-white' : 'text-neutral-300'}`}>
                     Alt-Azimutale
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Due assi: altezza e azimut</div>
+                  <div className="text-[11px] text-neutral-400 mt-0.5">Due assi: altezza e azimut</div>
                 </button>
                 <button
                   type="button"
                   onClick={() => setMount('equatorial')}
-                  className={`rounded-xl border px-4 py-3 text-left transition ${
+                  className={`rounded-md border px-4 py-3 text-left transition ${
                     mount === 'equatorial'
-                      ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/30'
-                      : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                      ? 'bg-white/[0.04] border-neutral-400'
+                      : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
                   }`}
                 >
-                  <div className={`text-sm font-bold ${mount === 'equatorial' ? 'text-emerald-300' : 'text-slate-200'}`}>
+                  <div className={`text-sm font-semibold ${mount === 'equatorial' ? 'text-white' : 'text-neutral-300'}`}>
                     Equatoriale
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Un asse allineato al polo celeste</div>
+                  <div className="text-[11px] text-neutral-400 mt-0.5">Un asse allineato al polo celeste</div>
                 </button>
               </div>
 
@@ -417,78 +566,71 @@ export const TabSimulatorFieldRotation: React.FC<TabSimulatorFieldRotationProps>
                 onClick={() => setLongExposure((v) => !v)}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                   longExposure
-                    ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50'
-                    : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                    ? 'bg-neutral-100 text-neutral-950 border-neutral-100'
+                    : 'bg-neutral-950 text-neutral-400 border-neutral-700 hover:text-neutral-200'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${longExposure ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                <span className={`w-2 h-2 rounded-full ${longExposure ? 'bg-accent' : 'bg-neutral-700'}`} />
                 {longExposure ? 'Posa unica cumulativa: attiva' : 'Simula una posa unica di tutta la sequenza'}
               </button>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-neutral-500">
                 Con la posa cumulativa attiva vedi il risultato di un'unica esposizione lunga quanto tutta la sequenza:
                 le stelle si trasformano in archi concentrici invece che in punti.
               </p>
             </>
           }
         >
-        {/* Readouts */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Tempo Trascorso</div>
-            <div className="text-xl font-extrabold text-slate-200">{hours.toFixed(1)} h</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">Inseguimento continuo</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Rotazione di Campo</div>
-            <div
-              className={`text-xl font-extrabold ${mount === 'altaz' ? 'text-rose-400' : 'text-emerald-400'}`}
-            >
-              {Math.abs(appliedRotation).toFixed(1)}°
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {mount === 'altaz' ? 'Il campo ruota' : 'Compensata dalla montatura'}
-            </div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Trascinamento ai Bordi</div>
-            <div className={`text-xl font-extrabold ${trailArcmin > 0.5 ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {trailArcmin.toFixed(1)}′
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">Stelle all'angolo del sensore</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Posizione in Cielo</div>
-            <div className="text-xl font-extrabold text-cyan-300">{now.altitude.toFixed(0)}°</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">azimut {now.azimuth.toFixed(0)}°</div>
-          </div>
-        </div>
 
         {belowHorizon && (
-          <p className="text-[11px] text-amber-400">
+          <p className="text-[11px] text-neutral-200">
             Alla tua latitudine, in questo momento della sequenza M31 sarebbe sotto l'orizzonte: i valori restano
             validi come dimostrazione geometrica.
           </p>
         )}
 
+        {(reversals.length > 0 || path.maxAltitude > 80) && (
+          <div className="border-l-2 border-accent pl-4 py-1 text-xs text-neutral-300 leading-relaxed max-w-3xl">
+            <span className="font-semibold text-neutral-100">
+              Perché il campo si ferma, torna indietro e poi gira di scatto.
+            </span>{' '}
+            La velocità di rotazione è proporzionale al coseno dell'azimut diviso il coseno dell'altezza. Quando
+            l'oggetto attraversa l'est o l'ovest esatti (azimut 90° o 270°) il coseno si annulla: la rotazione si
+            ferma e cambia verso
+            {reversals.length > 0 && (
+              <> — qui succede dopo {reversals.map((r) => `${r.toFixed(1).replace('.', ',')} h`).join(' e dopo ')}</>
+            )}
+            .{' '}
+            {path.maxAltitude > 80 && (
+              <>
+                Vicino allo zenit, invece, il coseno dell'altezza tende a zero e la rotazione accelera bruscamente: da{' '}
+                {location.name} M31 culmina a {path.maxAltitude.toFixed(1).replace('.', ',')}° e il campo arriva a
+                girare di {peakRate.toFixed(1).replace('.', ',')}° al minuto. Nella pratica nessuna montatura
+                altazimutale riesce a seguirlo: anche l'asse dell'azimut dovrebbe compiere mezzo giro in pochi
+                minuti. È la «zona cieca dello zenit», e chi riprende in alt-az aspetta che l'oggetto ne esca.
+              </>
+            )}
+          </div>
+        )}
+
         <DismissibleInfoPanel
           id="sim-field-rotation-note"
-          icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
-          className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-300"
+          icon={<Info className="w-5 h-5 text-neutral-200 shrink-0 mt-0.5" />}
+          className="bg-neutral-900/40 border border-neutral-700 rounded-md p-4 flex items-start gap-3 text-xs text-neutral-300"
         >
-          <span className="font-bold text-indigo-200">Perché il campo ruota su una montatura altazimutale</span>
+          <span className="font-semibold text-neutral-50">Perché il campo ruota su una montatura altazimutale</span>
           <p className="mt-1 leading-relaxed">
-            Una montatura <strong className="text-rose-300">altazimutale</strong> muove il telescopio su e giù e
+            Una montatura <strong className="text-warn">altazimutale</strong> muove il telescopio su e giù e
             destra-sinistra: riesce benissimo a tenere l'oggetto centrato, ma non a mantenerne l'orientamento,
             perché il cielo ruota attorno al polo celeste e non attorno allo zenit. L'angolo tra la verticale locale
-            e la direzione del polo — l'<strong className="text-slate-100">angolo parallattico</strong> — cambia di
+            e la direzione del polo — l'<strong className="text-neutral-100">angolo parallattico</strong> — cambia di
             continuo, e con esso ruota l'immagine nel sensore. Una montatura{' '}
-            <strong className="text-emerald-300">equatoriale</strong> ha invece un asse già allineato al polo
+            <strong className="text-neutral-100">equatoriale</strong> ha invece un asse già allineato al polo
             celeste: ruotandolo alla velocità siderale riproduce esattamente il moto del cielo, orientamento
             compreso, e il campo resta fermo. La rotazione è tanto più rapida quanto più l'oggetto passa vicino allo{' '}
-            <strong className="text-slate-100">zenit</strong>: alle latitudini italiane M31 culmina quasi allo zenit,
+            <strong className="text-neutral-100">zenit</strong>: alle latitudini italiane M31 culmina quasi allo zenit,
             ed è per questo che la rotazione qui è così violenta. Per il visuale è irrilevante (l'occhio non
             integra), ma in fotografia a lunga posa trasforma le stelle in archi. Le alternative sono un{' '}
-            <strong className="text-slate-100">derotatore di campo</strong> motorizzato, oppure moltissime pose
+            <strong className="text-neutral-100">derotatore di campo</strong> motorizzato, oppure moltissime pose
             brevi ruotate e riallineate in fase di elaborazione — al prezzo di perdere i bordi dell'inquadratura.
           </p>
         </DismissibleInfoPanel>

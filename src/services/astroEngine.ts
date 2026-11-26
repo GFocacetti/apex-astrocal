@@ -20,63 +20,63 @@ export const PLANETS_INFO: Record<PlanetKey, PlanetInfo> = {
     key: 'Sun',
     nameIt: 'Sole',
     symbol: '☉',
-    color: '#f59e0b', // Amber-500
+    color: '#d6c3a1',
     type: 'star',
   },
   Moon: {
     key: 'Moon',
     nameIt: 'Luna',
     symbol: '☾',
-    color: '#e2e8f0', // Slate-200
+    color: '#e5e5e5',
     type: 'satellite',
   },
   Mercury: {
     key: 'Mercury',
     nameIt: 'Mercurio',
     symbol: '☿',
-    color: '#94a3b8', // Slate-400
+    color: '#a3a3a3',
     type: 'planet_inner',
   },
   Venus: {
     key: 'Venus',
     nameIt: 'Venere',
     symbol: '♀',
-    color: '#fef08a', // Yellow-200
+    color: '#e3dccb',
     type: 'planet_inner',
   },
   Mars: {
     key: 'Mars',
     nameIt: 'Marte',
     symbol: '♂',
-    color: '#ef4444', // Red-500
+    color: '#c98b76',
     type: 'planet_outer',
   },
   Jupiter: {
     key: 'Jupiter',
     nameIt: 'Giove',
     symbol: '♃',
-    color: '#fb923c', // Orange-400
+    color: '#c9a98a',
     type: 'planet_outer',
   },
   Saturn: {
     key: 'Saturn',
     nameIt: 'Saturno',
     symbol: '♄',
-    color: '#eab308', // Yellow-500
+    color: '#d4c48f',
     type: 'planet_outer',
   },
   Uranus: {
     key: 'Uranus',
     nameIt: 'Urano',
     symbol: '♅',
-    color: '#06b6d4', // Cyan-500
+    color: '#9fb9bd',
     type: 'planet_outer',
   },
   Neptune: {
     key: 'Neptune',
     nameIt: 'Nettuno',
     symbol: '♆',
-    color: '#3b82f6', // Blue-500
+    color: '#8e9cba',
     type: 'planet_outer',
   },
 };
@@ -537,7 +537,7 @@ export function calculateAnnualPlanetSummaries(
 }
 
 /**
- * Tab 2: Calculate 20-Year Ephemeris & Best Observation Windows (2026 - 2045)
+ * Tab 2: Calculate 100-Year Ephemeris & Best Observation Windows (2026 - 2125)
  */
 export function calculate20YearEphemeris(
   startYear: number,
@@ -789,7 +789,7 @@ function formatEclipsePeakUtc(date: Date): string {
 }
 
 /**
- * Tab 4: Calculate Solar & Lunar Eclipses visible at user location (2026 - 2045)
+ * Tab 4: Calculate Solar & Lunar Eclipses visible at user location (2026 - 2125)
  */
 export function calculateEclipsesForLocation(
   startYear: number = 2026,

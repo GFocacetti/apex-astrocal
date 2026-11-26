@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { UserLocation } from '../types';
-import { MapPin, Navigation, Search, Calendar, Menu, X, ChevronDown } from 'lucide-react';
+import { Navigation, Menu, X, ChevronDown } from 'lucide-react';
 import { ApexLogo } from './ApexLogo';
 
 interface TabNode {
@@ -23,14 +23,14 @@ interface NavbarProps {
 const effemeridiSubTabs: TabNode[] = [
   { id: 'annual', label: 'Quando osservare' },
   { id: 'ephemeris20', label: 'Cicli di lungo periodo' },
-  { id: 'saturn', label: 'Speciale Saturno' },
-  { id: 'libration', label: 'Librazioni Lunari' },
+  { id: 'saturn', label: 'Anelli di Saturno' },
+  { id: 'libration', label: 'Librazioni lunari' },
   { id: 'eclipses', label: 'Eclissi' },
 ];
 
 const guideSubTabs: TabNode[] = [
-  { id: 'guideVisual', label: 'Osservazione Visuale' },
-  { id: 'guideImaging', label: 'Riprese Deep e Planetarie' },
+  { id: 'guideVisual', label: 'Osservazione visuale' },
+  { id: 'guideImaging', label: 'Riprese deep e planetarie' },
 ];
 
 const guidesSimulatorsSubTabs: TabNode[] = [
@@ -38,33 +38,35 @@ const guidesSimulatorsSubTabs: TabNode[] = [
     id: 'simulators',
     label: 'Simulatori',
     children: [
-      { id: 'simEyepiece', label: 'Campo Apparente Oculare' },
-      { id: 'simSeeingAdc', label: 'Seeing & Dispersione (ADC)' },
-      { id: 'simFieldRotation', label: 'Rotazione di Campo' },
-      { id: 'simSnrStacking', label: 'SNR & Stacking' },
+      { id: 'simEyepiece', label: 'Campo apparente' },
+      { id: 'simSeeingAdc', label: 'Seeing e ADC' },
+      { id: 'simFieldRotation', label: 'Rotazione di campo' },
+      { id: 'simSnrStacking', label: 'SNR e stacking' },
       { id: 'simBahtinov', label: 'Maschera di Bahtinov' },
-      { id: 'simLrgbOsc', label: 'LRGB vs OSC' },
+      { id: 'simLrgbOsc', label: 'LRGB e OSC' },
       { id: 'simCollimation', label: 'Collimazione' },
       { id: 'simBackfocus', label: 'Backfocus' },
-      { id: 'simPolarAlign', label: 'Allineamento Polare' },
+      { id: 'simPolarAlign', label: 'Allineamento polare' },
       { id: 'simGuiding', label: 'Autoguida' },
     ],
   },
   {
     id: 'filters',
-    label: 'Guide (coming soon)',
+    label: 'Guide ai filtri',
     children: [
-      { id: 'filtersVisual', label: 'Filtri per visuale' },
-      { id: 'filtersImaging', label: 'Filtri per deep e planetario' },
+      { id: 'filtersVisual', label: 'Visuale' },
+      { id: 'filtersImaging', label: 'Deep e planetario' },
     ],
   },
 ];
 
 const parentTabs: TabNode[] = [
   { id: 'effemeridi', label: 'Effemeridi', children: effemeridiSubTabs },
-  { id: 'guide', label: 'Calcolatori per il Telescopio', children: guideSubTabs },
-  { id: 'guides', label: 'Guide & Simulatori', children: guidesSimulatorsSubTabs },
+  { id: 'guide', label: 'Calcolatori', children: guideSubTabs },
+  { id: 'guides', label: 'Guide e simulatori', children: guidesSimulatorsSubTabs },
 ];
+
+const YEARS = Array.from({ length: 100 }, (_, i) => 2026 + i);
 
 // Resolve which branch of the tab tree the active leaf belongs to, so each
 // navigation row can highlight its own ancestor of the current selection.
@@ -73,6 +75,11 @@ const containsLeaf = (node: TabNode, leafId: string): boolean =>
 
 const firstLeafId = (node: TabNode): string =>
   node.children?.length ? firstLeafId(node.children[0]) : node.id;
+
+const formatCoords = (loc: UserLocation) =>
+  `${Math.abs(loc.latitude).toFixed(2)}° ${loc.latitude >= 0 ? 'N' : 'S'}  ${Math.abs(loc.longitude).toFixed(2)}° ${
+    loc.longitude >= 0 ? 'E' : 'O'
+  }`;
 
 export const Navbar: React.FC<NavbarProps> = ({
   location,
@@ -89,8 +96,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const activeSubTab = subTabs.find((t) => containsLeaf(t, activeTab));
   const subSubTabs = activeSubTab?.children ?? [];
 
-  // Small screens get a compact bar plus a drawer instead of the three stacked
-  // tab rows: pinned, those rows swallowed most of the viewport.
+  // Small screens get a compact bar plus a drawer instead of the stacked tab
+  // rows: pinned, those rows swallowed most of the viewport.
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
@@ -126,195 +133,167 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, [isMenuOpen]);
 
+  const yearSelect = (
+    <label className="relative inline-flex items-center">
+      <span className="sr-only">Anno di riferimento</span>
+      <select
+        value={selectedYear}
+        onChange={(e) => setSelectedYear(Number(e.target.value))}
+        className="appearance-none bg-transparent pr-5 text-sm tabular text-neutral-200 hover:text-white focus:outline-none cursor-pointer"
+      >
+        {YEARS.map((yr) => (
+          <option key={yr} value={yr}>
+            {yr}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-0 w-3.5 h-3.5 text-neutral-500" />
+    </label>
+  );
+
   const renderMenuNodes = (nodes: TabNode[], depth: number): React.ReactNode =>
     nodes.map((node) => {
       const hasChildren = !!node.children?.length;
       const isOnActiveBranch = containsLeaf(node, activeTab);
       const isExpanded = expandedIds.includes(node.id);
-      const sizeClass = depth === 0 ? 'text-sm font-semibold' : 'text-[13px] font-medium';
+
+      if (hasChildren) {
+        return (
+          <li key={node.id}>
+            <button
+              onClick={() => toggleExpanded(node.id)}
+              aria-expanded={isExpanded}
+              className={`w-full flex items-center justify-between gap-2 py-2.5 text-left transition-colors ${
+                depth === 0
+                  ? 'font-display text-[13px] uppercase tracking-[0.18em]'
+                  : 'text-sm'
+              } ${isOnActiveBranch ? 'text-white' : 'text-neutral-400 hover:text-neutral-200'}`}
+            >
+              <span>{node.label}</span>
+              <ChevronDown
+                className={`w-4 h-4 shrink-0 text-neutral-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {isExpanded && (
+              <ul className="mb-2 ml-1 pl-4 border-l border-neutral-800">{renderMenuNodes(node.children!, depth + 1)}</ul>
+            )}
+          </li>
+        );
+      }
 
       return (
         <li key={node.id}>
-          {hasChildren ? (
-            <>
-              <button
-                onClick={() => toggleExpanded(node.id)}
-                aria-expanded={isExpanded}
-                className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 rounded-lg transition-colors ${sizeClass} ${
-                  isOnActiveBranch
-                    ? 'text-amber-300 bg-slate-900'
-                    : 'text-slate-300 hover:bg-slate-900/70'
-                }`}
-              >
-                <span>{node.label}</span>
-                <ChevronDown
-                  className={`w-4 h-4 shrink-0 text-slate-500 transition-transform ${
-                    isExpanded ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {isExpanded && (
-                <ul className="mt-1 ml-3 pl-3 border-l border-slate-800 space-y-1">
-                  {renderMenuNodes(node.children!, depth + 1)}
-                </ul>
-              )}
-            </>
-          ) : (
-            <button
-              onClick={() => selectFromMenu(node.id)}
-              aria-current={isOnActiveBranch ? 'page' : undefined}
-              className={`w-full flex items-center gap-1.5 text-left px-3 py-2 rounded-lg transition-colors ${sizeClass} ${
-                isOnActiveBranch
-                  ? 'text-amber-300 bg-slate-800 border border-slate-700'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 border border-transparent'
-              }`}
-            >
-              {node.id === 'saturn' && (
-                <span className="text-[13px] leading-none" role="img" aria-label="Saturno">
-                  🪐
-                </span>
-              )}
-              {node.label}
-            </button>
-          )}
+          <button
+            onClick={() => selectFromMenu(node.id)}
+            aria-current={isOnActiveBranch ? 'page' : undefined}
+            className={`w-full text-left py-2 text-sm transition-colors ${
+              isOnActiveBranch ? 'text-accent' : 'text-neutral-400 hover:text-neutral-100'
+            }`}
+          >
+            {node.label}
+          </button>
         </li>
       );
     });
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-xl">
-        {/* Compact bar (small screens): logo and hamburger only */}
-        <div className="lg:hidden flex items-center justify-between gap-3 px-4 py-2">
-          <ApexLogo className="h-9 w-auto shrink-0" />
+      <header className="sticky top-0 z-40 bg-ink/85 backdrop-blur-md border-b border-neutral-900">
+        {/* Compact bar (small screens): logo and menu button only */}
+        <div className="lg:hidden flex items-center justify-between gap-3 px-4 h-14">
+          <ApexLogo className="h-8 w-auto shrink-0" />
           <button
             onClick={openMenu}
             aria-label="Apri il menu"
             aria-expanded={isMenuOpen}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 transition"
+            className="inline-flex items-center justify-center w-10 h-10 -mr-2 text-neutral-300 hover:text-white transition-colors"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" strokeWidth={1.5} />
           </button>
         </div>
 
         {/* Full header (large screens) */}
-        <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          {/* Top Row: Title + Location Bar + Year */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col items-start gap-1">
-              <ApexLogo className="h-24 w-auto shrink-0" />
-              <div>
-                <p className="text-xs font-semibold tracking-wide text-slate-300">
-                  Astronomical Planning &amp; EXploration
-                </p>
-                <p className="text-xs text-slate-400">
-                  Effemeridi e strumenti di calcolo per il setup visuale e fotografico
-                </p>
-              </div>
-            </div>
+        <div className="hidden lg:block max-w-7xl mx-auto px-8">
+          <div className="flex items-center justify-between gap-8 h-[72px]">
+            <ApexLogo className="h-11 w-auto shrink-0" />
 
-            {/* Location & Year Controls */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* GPS Quick Button */}
+            <nav className="flex items-center gap-9" aria-label="Sezioni">
+              {parentTabs.map((tab) => {
+                const isActive = activeParentTab.id === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(firstLeafId(tab))}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`relative py-2 font-display text-[12px] uppercase tracking-[0.2em] transition-colors ${
+                      isActive ? 'text-white' : 'text-neutral-500 hover:text-neutral-200'
+                    }`}
+                  >
+                    {tab.label}
+                    {isActive && <span className="absolute left-0 right-0 -bottom-px h-px bg-accent" />}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="flex items-center gap-5 text-sm">
+              <button
+                onClick={onOpenLocationModal}
+                title="Cambia località"
+                className="group flex flex-col items-end leading-tight max-w-[16rem]"
+              >
+                <span className="truncate max-w-full text-neutral-200 group-hover:text-white transition-colors">
+                  {location.name}
+                </span>
+                <span className="text-[11px] tabular text-neutral-500 whitespace-pre">{formatCoords(location)}</span>
+              </button>
               <button
                 onClick={onQuickGps}
                 disabled={isGpsLoading}
-                title="Rileva posizione con GPS"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 transition shadow-sm disabled:opacity-50"
+                title="Usa la posizione GPS"
+                aria-label="Usa la posizione GPS"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors disabled:opacity-50"
               >
-                <Navigation className={`w-3.5 h-3.5 ${isGpsLoading ? 'animate-spin' : ''}`} />
-                <span>GPS Ora</span>
+                <Navigation className={`w-3.5 h-3.5 ${isGpsLoading ? 'animate-pulse' : ''}`} strokeWidth={1.5} />
               </button>
-
-              {/* Location Selector Button */}
-              <button
-                onClick={onOpenLocationModal}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-950/60 hover:bg-indigo-900/60 text-slate-200 border border-indigo-500/40 transition shadow-sm max-w-xs truncate"
-              >
-                <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="truncate">{location.name}</span>
-                <span className="text-[10px] text-slate-400 shrink-0">
-                  ({location.latitude.toFixed(2)}°, {location.longitude.toFixed(2)}°)
-                </span>
-                <Search className="w-3 h-3 text-slate-400 shrink-0" />
-              </button>
-
-              {/* Year Selector (100 Years: 2026 - 2125) */}
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-lg px-2.5 py-1">
-                <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="bg-transparent text-xs font-semibold text-slate-100 focus:outline-none cursor-pointer pr-1"
-                >
-                  {Array.from({ length: 100 }, (_, i) => 2026 + i).map((yr) => (
-                    <option key={yr} value={yr} className="bg-slate-900 text-slate-100">
-                      {yr}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <span className="w-px h-6 bg-neutral-800" aria-hidden="true" />
+              {yearSelect}
             </div>
           </div>
 
-          {/* Parent Navigation Tabs */}
-          <nav className="mt-3 pt-2 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto scrollbar-thin whitespace-nowrap flex-nowrap pb-1.5 touch-pan-x">
-            {parentTabs.map((tab) => {
-              const isActive = activeParentTab.id === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(firstLeafId(tab))}
-                  className={`whitespace-nowrap px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Sub Navigation Tabs (current parent group) */}
-          <nav className="pt-2 flex items-center gap-2 overflow-x-auto scrollbar-thin whitespace-nowrap flex-nowrap pb-1.5 touch-pan-x">
+          {/* Second level */}
+          <nav className="flex items-center gap-7 h-11 border-t border-neutral-900 overflow-x-auto whitespace-nowrap">
             {subTabs.map((tab) => {
               const isActive = activeSubTab?.id === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(firstLeafId(tab))}
-                  className={`whitespace-nowrap px-3 py-1 text-[11px] font-medium rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
-                    isActive
-                      ? 'bg-slate-800 text-amber-300 border border-slate-700'
-                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 border border-transparent'
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`shrink-0 text-[13px] transition-colors ${
+                    isActive ? 'text-white' : 'text-neutral-500 hover:text-neutral-200'
                   }`}
                 >
-                  {tab.id === 'saturn' && (
-                    <span className="text-[11px] leading-none" role="img" aria-label="Saturno">
-                      🪐
-                    </span>
-                  )}
                   {tab.label}
                 </button>
               );
             })}
           </nav>
 
-          {/* Third-level Tabs (only where the active sub-tab has children) */}
+          {/* Third level, only where the active second-level entry has children */}
           {subSubTabs.length > 0 && (
-            <nav className="pt-1 pl-3 flex items-center gap-2 overflow-x-auto scrollbar-thin whitespace-nowrap flex-nowrap pb-1.5 touch-pan-x">
+            <nav className="flex items-center gap-1 pb-3 overflow-x-auto whitespace-nowrap">
               {subSubTabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`whitespace-nowrap px-2.5 py-0.5 text-[11px] font-medium rounded-md transition-all shrink-0 border-l-2 ${
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`shrink-0 px-3 py-1 rounded-full text-[12px] border transition-colors ${
                       isActive
-                        ? 'border-amber-500/60 text-amber-300 bg-slate-800/60'
-                        : 'border-slate-700/60 text-slate-500 hover:text-slate-300 hover:bg-slate-800/40'
+                        ? 'border-neutral-600 text-white'
+                        : 'border-transparent text-neutral-500 hover:text-neutral-200'
                     }`}
                   >
                     {tab.label}
@@ -331,89 +310,60 @@ export const Navbar: React.FC<NavbarProps> = ({
           header box instead of the viewport. */}
       {isMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
-          <div
-            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
-            onClick={() => setIsMenuOpen(false)}
-            aria-hidden="true"
-          />
+          <div className="absolute inset-0 bg-black/70" onClick={() => setIsMenuOpen(false)} aria-hidden="true" />
 
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Menu di navigazione"
-            className="absolute inset-y-0 right-0 w-[86%] max-w-sm flex flex-col bg-slate-950 border-l border-slate-800 shadow-2xl text-slate-100"
+            className="absolute inset-y-0 right-0 w-[86%] max-w-sm flex flex-col bg-ink border-l border-neutral-900"
           >
-            <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2 border-b border-slate-800">
-              <ApexLogo className="h-9 w-auto shrink-0" />
+            <div className="shrink-0 flex items-center justify-between gap-3 px-5 h-14 border-b border-neutral-900">
+              <ApexLogo className="h-8 w-auto shrink-0" />
               <button
                 onClick={() => setIsMenuOpen(false)}
                 aria-label="Chiudi il menu"
-                className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 transition"
+                className="inline-flex items-center justify-center w-10 h-10 -mr-2 text-neutral-300 hover:text-white transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" strokeWidth={1.5} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-5">
-              <div>
-                <p className="text-[11px] font-semibold tracking-wide text-slate-300">
-                  Astronomical Planning &amp; EXploration
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Effemeridi e strumenti di calcolo per il setup visuale e fotografico
-                </p>
-              </div>
-
-              {/* Location & Year Controls */}
-              <div className="space-y-2">
+            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-6">
+              <div className="space-y-3">
                 <button
                   onClick={() => {
                     setIsMenuOpen(false);
                     onOpenLocationModal();
                   }}
-                  className="w-full inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-950/60 hover:bg-indigo-900/60 text-slate-200 border border-indigo-500/40 transition shadow-sm"
+                  className="w-full flex flex-col items-start text-left leading-tight"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="truncate">{location.name}</span>
-                  <span className="text-[10px] text-slate-400 shrink-0 ml-auto">
-                    ({location.latitude.toFixed(2)}°, {location.longitude.toFixed(2)}°)
+                  <span className="text-[11px] font-display uppercase tracking-[0.18em] text-neutral-500 mb-1">
+                    Località
                   </span>
-                  <Search className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="text-neutral-100">{location.name}</span>
+                  <span className="text-[11px] tabular text-neutral-500 whitespace-pre">{formatCoords(location)}</span>
                 </button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4 text-sm">
                   <button
                     onClick={() => {
                       setIsMenuOpen(false);
                       onQuickGps();
                     }}
                     disabled={isGpsLoading}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 transition shadow-sm disabled:opacity-50"
+                    className="inline-flex items-center gap-2 text-neutral-300 hover:text-white disabled:opacity-50"
                   >
-                    <Navigation className={`w-3.5 h-3.5 ${isGpsLoading ? 'animate-spin' : ''}`} />
-                    <span>GPS Ora</span>
+                    <Navigation className={`w-3.5 h-3.5 ${isGpsLoading ? 'animate-pulse' : ''}`} strokeWidth={1.5} />
+                    Usa GPS
                   </button>
-
-                  <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-lg px-2.5 py-2">
-                    <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(Number(e.target.value))}
-                      aria-label="Anno di riferimento"
-                      className="bg-transparent text-xs font-semibold text-slate-100 focus:outline-none cursor-pointer pr-1"
-                    >
-                      {Array.from({ length: 100 }, (_, i) => 2026 + i).map((yr) => (
-                        <option key={yr} value={yr} className="bg-slate-900 text-slate-100">
-                          {yr}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <span className="w-px h-4 bg-neutral-800" aria-hidden="true" />
+                  {yearSelect}
                 </div>
               </div>
 
-              <nav className="border-t border-slate-800/80 pt-4">
-                <ul className="space-y-1">{renderMenuNodes(parentTabs, 0)}</ul>
+              <nav className="border-t border-neutral-900 pt-3">
+                <ul>{renderMenuNodes(parentTabs, 0)}</ul>
               </nav>
             </div>
           </div>

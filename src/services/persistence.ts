@@ -12,6 +12,16 @@ const VALID_TABS = [
   'guideImaging',
   'filtersVisual',
   'filtersImaging',
+  'simEyepiece',
+  'simSeeingAdc',
+  'simFieldRotation',
+  'simSnrStacking',
+  'simBahtinov',
+  'simLrgbOsc',
+  'simCollimation',
+  'simBackfocus',
+  'simPolarAlign',
+  'simGuiding',
 ];
 
 export interface PersistedState {

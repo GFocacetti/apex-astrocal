@@ -4,7 +4,6 @@ import { UserLocation } from '../types';
 import { Sparkles, Info, Compass, Shuffle, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
 import { SimulatorStage } from './SimulatorStage';
-import { ApexIcon } from './ApexIcon';
 
 // Polaris in 2026: precession has carried it to roughly 3h 00m of right
 // ascension and 39 arcminutes from the celestial pole, and it is still closing
@@ -98,21 +97,13 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
   };
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Simulatori Interattivi
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Allineamento Polare al Cannocchiale
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Simulatore 09 / 10</div>
+          <h2 className="page-title">Allineamento polare al cannocchiale</h2>
+          <p className="lead">
             La Polare non è il polo: gli gira attorno a poco più di mezzo grado di distanza. Allineare la montatura
             vuol dire portarla sulla tacca giusta del reticolo agendo sulle due viti di altezza e azimut — e la
             tacca giusta cambia ora dopo ora.
@@ -120,21 +111,50 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
         </div>
       </div>
 
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 sm:p-6 space-y-6">
         <div className="flex items-center gap-2 flex-wrap">
-          <Compass className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300">
+          <h3 className="section-title">
             Vista nel cannocchiale polare
           </h3>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[11px] text-neutral-500">
             da {location.name} · latitudine {location.latitude.toFixed(1)}°
           </span>
         </div>
 
         <SimulatorStage
+          readouts={
+            <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Errore di Allineamento</div>
+            <div className={`text-xl font-medium ${isAligned ? 'text-neutral-200' : 'text-warn'}`}>
+              {errTotal.toFixed(1)}′
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">
+              {isAligned ? 'buono per la lunga posa' : 'la Polare non è sulla tacca'}
+            </div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Deriva in 5 Minuti</div>
+            <div className={`text-xl font-medium ${driftArcsec5min < 4 ? 'text-neutral-200' : 'text-neutral-200'}`}>
+              {driftArcsec5min.toFixed(1)}″
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">fino a, senza autoguida</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Posizione della Polare</div>
+            <div className="text-xl font-medium text-neutral-100">ore {clockPos.toFixed(1)}</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">sul quadrante del reticolo</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Distanza dal Polo</div>
+            <div className="text-xl font-medium text-neutral-200">{(POLARIS_POLE_DIST_DEG * 60).toFixed(0)}′</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">la Polare nel 2026</div>
+          </div>
+        </div>
+          }
           view={
             <div className="mx-auto w-full max-w-[400px]">
-            <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="w-full rounded-xl bg-[#04060e] border border-slate-800">
+            <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="w-full rounded-md bg-[#04060e] border border-neutral-800">
               {/* Faint stars, carried along by the true pole */}
               {FIELD.map((s, i) => (
                 <circle
@@ -147,10 +167,10 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
               ))}
 
               {/* Reticle engraving: the mount's own axis is always the centre */}
-              <circle cx={CENTER} cy={CENTER} r={VIEW / 2 - 20} fill="none" stroke="#334155" strokeWidth="1.5" />
-              <circle cx={CENTER} cy={CENTER} r={POLARIS_POLE_DIST_DEG * PX_PER_DEG} fill="none" stroke="#475569" strokeWidth="1.5" />
-              <line x1={CENTER - 24} y1={CENTER} x2={CENTER + 24} y2={CENTER} stroke="#475569" strokeWidth="1.5" />
-              <line x1={CENTER} y1={CENTER - 24} x2={CENTER} y2={CENTER + 24} stroke="#475569" strokeWidth="1.5" />
+              <circle cx={CENTER} cy={CENTER} r={VIEW / 2 - 20} fill="none" stroke="#404040" strokeWidth="1.5" />
+              <circle cx={CENTER} cy={CENTER} r={POLARIS_POLE_DIST_DEG * PX_PER_DEG} fill="none" stroke="#525252" strokeWidth="1.5" />
+              <line x1={CENTER - 24} y1={CENTER} x2={CENTER + 24} y2={CENTER} stroke="#525252" strokeWidth="1.5" />
+              <line x1={CENTER} y1={CENTER - 24} x2={CENTER} y2={CENTER + 24} stroke="#525252" strokeWidth="1.5" />
 
               {/* Hour marks around the Polaris circle */}
               {Array.from({ length: 12 }, (_, i) => {
@@ -160,22 +180,22 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                 const y1 = CENTER - Math.cos(ang) * (r0 - 5);
                 const x2 = CENTER + Math.sin(ang) * (r0 + 5);
                 const y2 = CENTER - Math.cos(ang) * (r0 + 5);
-                return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#475569" strokeWidth="1" />;
+                return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#525252" strokeWidth="1" />;
               })}
 
               {/* Where Polaris has to end up, given the current sidereal time */}
-              <circle cx={targetX} cy={targetY} r="11" fill="none" stroke="#34d399" strokeWidth="2" strokeDasharray="3 3" />
-              <text x={targetX} y={targetY - 17} textAnchor="middle" fontSize="10" fill="#34d399" fontWeight="bold">
+              <circle cx={targetX} cy={targetY} r="11" fill="none" stroke="#e5e5e5" strokeWidth="2" strokeDasharray="3 3" />
+              <text x={targetX} y={targetY - 17} textAnchor="middle" fontSize="10" fill="#e5e5e5" fontWeight="bold">
                 obiettivo
               </text>
 
               {/* The true celestial pole, normally invisible at the eyepiece */}
               {showPole && (
                 <g>
-                  <circle cx={poleX} cy={poleY} r="5" fill="none" stroke="#f43f5e" strokeWidth="2" />
-                  <line x1={poleX - 9} y1={poleY} x2={poleX + 9} y2={poleY} stroke="#f43f5e" strokeWidth="1.5" />
-                  <line x1={poleX} y1={poleY - 9} x2={poleX} y2={poleY + 9} stroke="#f43f5e" strokeWidth="1.5" />
-                  <text x={poleX} y={poleY + 22} textAnchor="middle" fontSize="10" fill="#f43f5e">
+                  <circle cx={poleX} cy={poleY} r="5" fill="none" stroke="#d16a5f" strokeWidth="2" />
+                  <line x1={poleX - 9} y1={poleY} x2={poleX + 9} y2={poleY} stroke="#d16a5f" strokeWidth="1.5" />
+                  <line x1={poleX} y1={poleY - 9} x2={poleX} y2={poleY + 9} stroke="#d16a5f" strokeWidth="1.5" />
+                  <text x={poleX} y={poleY + 22} textAnchor="middle" fontSize="10" fill="#d16a5f">
                     polo vero
                   </text>
                 </g>
@@ -189,7 +209,7 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
               </text>
 
               {isAligned && (
-                <text x={CENTER} y={VIEW - 14} textAnchor="middle" fontSize="12" fill="#34d399" fontWeight="bold">
+                <text x={CENTER} y={VIEW - 14} textAnchor="middle" fontSize="12" fill="#e5e5e5" fontWeight="bold">
                   Allineato
                 </text>
               )}
@@ -199,13 +219,13 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
           controls={
             <>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-                <div className="text-[11px] text-slate-400 mb-2">Vite di Altezza</div>
+              <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+                <div className="text-[11px] text-neutral-400 mb-2">Vite di Altezza</div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => nudge(0, -6)}
-                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 transition"
+                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-semibold bg-neutral-900 text-neutral-200 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
                     Alza
@@ -213,7 +233,7 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                   <button
                     type="button"
                     onClick={() => nudge(0, 6)}
-                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 transition"
+                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-semibold bg-neutral-900 text-neutral-200 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                     Abbassa
@@ -223,31 +243,31 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                   <button
                     type="button"
                     onClick={() => nudge(0, -1)}
-                    className="flex-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 text-cyan-300 border border-slate-700 hover:bg-slate-800 transition"
+                    className="flex-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-neutral-900 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     fine ↑
                   </button>
                   <button
                     type="button"
                     onClick={() => nudge(0, 1)}
-                    className="flex-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 text-cyan-300 border border-slate-700 hover:bg-slate-800 transition"
+                    className="flex-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-neutral-900 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     fine ↓
                   </button>
                 </div>
-                <div className="text-[10px] text-slate-500 mt-2">
+                <div className="text-[10px] text-neutral-500 mt-2">
                   scarto {errAlt > 0 ? '+' : ''}
                   {errAlt.toFixed(1)}′
                 </div>
               </div>
 
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-                <div className="text-[11px] text-slate-400 mb-2">Vite di Azimut</div>
+              <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+                <div className="text-[11px] text-neutral-400 mb-2">Vite di Azimut</div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => nudge(-6, 0)}
-                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 transition"
+                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-semibold bg-neutral-900 text-neutral-200 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                     Sinistra
@@ -255,7 +275,7 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                   <button
                     type="button"
                     onClick={() => nudge(6, 0)}
-                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 transition"
+                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-semibold bg-neutral-900 text-neutral-200 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     Destra
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -265,19 +285,19 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                   <button
                     type="button"
                     onClick={() => nudge(-1, 0)}
-                    className="flex-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 text-cyan-300 border border-slate-700 hover:bg-slate-800 transition"
+                    className="flex-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-neutral-900 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     fine ←
                   </button>
                   <button
                     type="button"
                     onClick={() => nudge(1, 0)}
-                    className="flex-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 text-cyan-300 border border-slate-700 hover:bg-slate-800 transition"
+                    className="flex-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-neutral-900 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     fine →
                   </button>
                 </div>
-                <div className="text-[10px] text-slate-500 mt-2">
+                <div className="text-[10px] text-neutral-500 mt-2">
                   scarto {errAz > 0 ? '+' : ''}
                   {errAz.toFixed(1)}′
                 </div>
@@ -288,7 +308,7 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
               <button
                 type="button"
                 onClick={randomize}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-amber-300 border border-slate-700 hover:bg-slate-800 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-neutral-950 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition"
               >
                 <Shuffle className="w-3.5 h-3.5" />
                 Monta da zero
@@ -298,8 +318,8 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                 onClick={() => setShowPole((v) => !v)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                   showPole
-                    ? 'bg-rose-500/20 text-rose-200 border-rose-500/50'
-                    : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                    ? 'bg-neutral-100 text-neutral-950 border-neutral-100'
+                    : 'bg-neutral-950 text-neutral-400 border-neutral-700 hover:text-neutral-200'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -308,11 +328,11 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
             </div>
 
             <div>
-              <div className="flex justify-between text-xs text-slate-300 mb-1">
+              <div className="flex justify-between text-xs text-neutral-300 mb-1">
                 <span>
-                  Sposta l'ora: <strong className="text-amber-400">{hourOffset > 0 ? '+' : ''}{hourOffset} h</strong>
+                  Sposta l'ora: <strong className="text-neutral-200">{hourOffset > 0 ? '+' : ''}{hourOffset} h</strong>
                 </span>
-                <span className="text-[10px] text-slate-500">la tacca si sposta col tempo siderale</span>
+                <span className="text-[10px] text-neutral-500">la tacca si sposta col tempo siderale</span>
               </div>
               <input
                 type="range"
@@ -321,79 +341,50 @@ export const TabSimulatorPolarAlign: React.FC<Props> = ({ location }) => {
                 step={1}
                 value={hourOffset}
                 onChange={(e) => setHourOffset(Number(e.target.value))}
-                className="w-full accent-amber-500 cursor-pointer"
+                className="w-full cursor-pointer"
               />
             </div>
             </>
           }
         >
-        {/* Readouts */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Errore di Allineamento</div>
-            <div className={`text-xl font-extrabold ${isAligned ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {errTotal.toFixed(1)}′
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {isAligned ? 'buono per la lunga posa' : 'la Polare non è sulla tacca'}
-            </div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Deriva in 5 Minuti</div>
-            <div className={`text-xl font-extrabold ${driftArcsec5min < 4 ? 'text-emerald-400' : 'text-amber-400'}`}>
-              {driftArcsec5min.toFixed(1)}″
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">fino a, senza autoguida</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Posizione della Polare</div>
-            <div className="text-xl font-extrabold text-cyan-300">ore {clockPos.toFixed(1)}</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">sul quadrante del reticolo</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Distanza dal Polo</div>
-            <div className="text-xl font-extrabold text-slate-200">{(POLARIS_POLE_DIST_DEG * 60).toFixed(0)}′</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">la Polare nel 2026</div>
-          </div>
-        </div>
 
         <DismissibleInfoPanel
           id="sim-polar-align-note"
-          icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
-          className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-300"
+          icon={<Info className="w-5 h-5 text-neutral-200 shrink-0 mt-0.5" />}
+          className="bg-neutral-900/40 border border-neutral-700 rounded-md p-4 flex items-start gap-3 text-xs text-neutral-300"
         >
-          <span className="font-bold text-indigo-200">Perché non basta "puntare la Polare"</span>
+          <span className="font-semibold text-neutral-50">Perché non basta "puntare la Polare"</span>
           <p className="mt-1 leading-relaxed">
             Il polo celeste è il punto attorno a cui ruota tutto il cielo, e la{' '}
-            <strong className="text-slate-100">Stella Polare non ci sta sopra</strong>: nel 2026 se ne trova a circa{' '}
-            <strong className="text-amber-300">39 primi d'arco</strong>, poco più di mezzo grado, e vi gira attorno
+            <strong className="text-neutral-100">Stella Polare non ci sta sopra</strong>: nel 2026 se ne trova a circa{' '}
+            <strong className="text-neutral-100">39 primi d'arco</strong>, poco più di mezzo grado, e vi gira attorno
             una volta al giorno siderale. Per questo il reticolo del cannocchiale polare ha un cerchietto di quel
             raggio: il tuo compito non è centrare la Polare, ma appoggiarla sulla{' '}
-            <strong className="text-slate-100">posizione oraria corretta</strong> di quel cerchio. La posizione
+            <strong className="text-neutral-100">posizione oraria corretta</strong> di quel cerchio. La posizione
             dipende dall'ora e dalla tua longitudine, ed è quella che qui viene calcolata dal tempo siderale locale:
             prova a muovere il cursore delle ore e guarda l'obiettivo spostarsi lungo il cerchio.
             <br />
             <br />
-            <strong className="text-slate-100">Le due viti.</strong> La montatura equatoriale si regola su due assi
-            indipendenti: la vite di <strong className="text-slate-100">altezza</strong> alza e abbassa l'asse
+            <strong className="text-neutral-100">Le due viti.</strong> La montatura equatoriale si regola su due assi
+            indipendenti: la vite di <strong className="text-neutral-100">altezza</strong> alza e abbassa l'asse
             polare e si imposta grossolanamente sulla latitudine del posto, quella di{' '}
-            <strong className="text-slate-100">azimut</strong> lo ruota a destra e sinistra verso il nord vero — che
+            <strong className="text-neutral-100">azimut</strong> lo ruota a destra e sinistra verso il nord vero — che
             non è il nord magnetico della bussola. Conviene sempre partire con il treppiede in bolla, altrimenti le
             due regolazioni si influenzano a vicenda e si finisce per inseguire la coda.
             <br />
             <br />
-            <strong className="text-slate-100">Quanto deve essere preciso?</strong> Dipende da cosa ci fai. Un
+            <strong className="text-neutral-100">Quanto deve essere preciso?</strong> Dipende da cosa ci fai. Un
             errore residuo fa scivolare lentamente il campo: la deriva è pari all'errore moltiplicato per l'angolo
             che il cielo percorre, quindi con 10 primi d'arco di scarto si accumulano circa 13 secondi d'arco in
             cinque minuti — enormi, visto che una stella ben messa a fuoco ne misura due o tre. Con l'autoguida la
             deriva viene corretta e qualche primo d'arco è tollerabile, ma resta la{' '}
-            <strong className="text-slate-100">rotazione di campo</strong>, che nessuna guida può togliere: è il
+            <strong className="text-neutral-100">rotazione di campo</strong>, che nessuna guida può togliere: è il
             motivo per cui conviene comunque scendere sotto i 2-3 primi. Per il visuale, invece, anche mezzo grado
             non dà alcun fastidio.
             <br />
             <br />
             Un'avvertenza pratica: molti cannocchiali polari mostrano l'immagine{' '}
-            <strong className="text-slate-100">capovolta o specchiata</strong>, quindi la posizione oraria da usare
+            <strong className="text-neutral-100">capovolta o specchiata</strong>, quindi la posizione oraria da usare
             può risultare ruotata rispetto a quella che leggi su un'app. Fidati del reticolo che hai davanti e, in
             caso di dubbio, verifica con il metodo della deriva o con l'allineamento polare assistito del software
             di acquisizione, che misura l'errore direttamente dalle stelle riprese.

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Info, Wand2 } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
 import { SimulatorStage } from './SimulatorStage';
-import { ApexIcon } from './ApexIcon';
 
 // Jupiter's apparent diameter near opposition, used as the angular reference
 // that converts arcseconds into on-screen pixels.
@@ -223,24 +222,16 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
         : 'Sovra-corretto (fringe invertito)';
 
   const residualClass =
-    Math.abs(residual) < 0.15 ? 'text-emerald-400' : Math.abs(residual) < 1 ? 'text-amber-400' : 'text-rose-400';
+    Math.abs(residual) < 0.15 ? 'text-neutral-200' : Math.abs(residual) < 1 ? 'text-neutral-200' : 'text-warn';
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Simulatori Interattivi
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Seeing & Dispersione Atmosferica (ADC)
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Simulatore 02 / 10</div>
+          <h2 className="page-title">Seeing e dispersione atmosferica</h2>
+          <p className="lead">
             Abbassa il pianeta verso l'orizzonte e guarda cosa succede: l'atmosfera si comporta come un prisma e
             scompone l'immagine in un bordo blu verso l'alto e uno rosso verso il basso, mentre la turbolenza la fa
             ribollire. Attiva il correttore ADC e ruota i prismi per rimettere i colori a registro.
@@ -248,35 +239,56 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 sm:p-6 space-y-6">
         <div className="flex items-center gap-2">
-          <span className="text-base leading-none" role="img" aria-label="Giove">
-            🔭
-          </span>
-          <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300">
+          <h3 className="section-title">
             Giove a {altitude}° sull'orizzonte
           </h3>
         </div>
 
         <SimulatorStage
+          readouts={
+            <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Massa d'Aria</div>
+            <div className="text-xl font-medium text-neutral-200">{mass.toFixed(2)}</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">Allo zenit vale 1,00</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Dispersione Atmosferica</div>
+            <div className="text-xl font-medium text-neutral-100">{dispersion.toFixed(2)}″</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">Distanza blu-rosso</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Residuo dopo ADC</div>
+            <div className={`text-xl font-medium ${residualClass}`}>{Math.abs(residual).toFixed(2)}″</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">{adcEnabled ? residualLabel : 'ADC non inserito'}</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Seeing Effettivo</div>
+            <div className="text-xl font-medium text-neutral-200">{effectiveSeeing.toFixed(2)}″</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">{seeing.toFixed(1)}″ allo zenit</div>
+          </div>
+        </div>
+          }
           view={
-            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-md bg-neutral-950">
               <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
 
               {/* Zenith / horizon orientation guide */}
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-slate-500 pointer-events-none">
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-neutral-500 pointer-events-none">
                 ↑ Zenit
               </div>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-slate-500 pointer-events-none">
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-neutral-500 pointer-events-none">
                 ↓ Orizzonte
               </div>
 
-              <div className="absolute bottom-3 left-3 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                Dispersione <span className="text-cyan-300 font-bold">{dispersion.toFixed(2)}″</span>
+              <div className="absolute bottom-3 left-3 text-[11px] text-neutral-400 bg-neutral-950/70 border border-neutral-800 rounded-lg px-2.5 py-1.5">
+                Dispersione <span className="text-neutral-100 font-semibold">{dispersion.toFixed(2)}″</span>
                 {adcEnabled && (
                   <>
                     {' '}
-                    · Residuo <span className={`font-bold ${residualClass}`}>{Math.abs(residual).toFixed(2)}″</span>
+                    · Residuo <span className={`font-semibold ${residualClass}`}>{Math.abs(residual).toFixed(2)}″</span>
                   </>
                 )}
               </div>
@@ -285,9 +297,9 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
           controls={
             <>
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
-                    Altezza sull'Orizzonte: <strong className="text-amber-400">{altitude}°</strong>
+                    Altezza sull'Orizzonte: <strong className="text-neutral-200">{altitude}°</strong>
                   </span>
                 </div>
                 <input
@@ -297,16 +309,16 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
                   step={1}
                   value={altitude}
                   onChange={(e) => setAltitude(Number(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
               </div>
 
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
-                    Turbolenza / Seeing allo Zenit: <strong className="text-cyan-400">{seeing.toFixed(1)}″</strong>
+                    Turbolenza / Seeing allo Zenit: <strong className="text-neutral-200">{seeing.toFixed(1)}″</strong>
                   </span>
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-neutral-500">
                     {seeing === 0
                       ? '(cielo perfetto senza atmosfera)'
                       : seeing <= 1
@@ -325,20 +337,20 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
                   step={0.1}
                   value={seeing}
                   onChange={(e) => setSeeing(Number(e.target.value))}
-                  className="w-full accent-cyan-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
               </div>
 
               {/* ADC panel: a control too, so it belongs with the sliders */}
               <div
-                className={`rounded-xl border p-4 transition-colors ${
-                  adcEnabled ? 'bg-indigo-950/30 border-indigo-500/40' : 'bg-slate-950/60 border-slate-800'
+                className={`rounded-md border p-4 transition-colors ${
+                  adcEnabled ? 'bg-neutral-900/40 border-neutral-600' : 'bg-neutral-950/60 border-neutral-800'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <div className="text-sm font-bold text-slate-100">Correttore di Dispersione Atmosferica (ADC)</div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-sm font-semibold text-neutral-100">Correttore di Dispersione Atmosferica (ADC)</div>
+                    <div className="text-[11px] text-neutral-400">
                       Due prismi contrapposti che introducono una dispersione uguale e contraria
                     </div>
                   </div>
@@ -347,12 +359,12 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
                     onClick={() => setAdcEnabled((v) => !v)}
                     className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                       adcEnabled
-                        ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50'
-                        : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                        ? 'bg-neutral-100 text-neutral-950 border-neutral-100'
+                        : 'bg-neutral-900 text-neutral-400 border-neutral-700 hover:text-neutral-200'
                     }`}
                   >
                     <span
-                      className={`w-2 h-2 rounded-full ${adcEnabled ? 'bg-emerald-400' : 'bg-slate-600'}`}
+                      className={`w-2 h-2 rounded-full ${adcEnabled ? 'bg-accent' : 'bg-neutral-700'}`}
                     />
                     {adcEnabled ? 'ADC inserito' : 'ADC escluso'}
                   </button>
@@ -360,11 +372,11 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
 
                 {adcEnabled && (
                   <div className="mt-4 space-y-2">
-                    <div className="flex justify-between text-xs text-slate-300 mb-1">
+                    <div className="flex justify-between text-xs text-neutral-300 mb-1">
                       <span>
-                        Rotazione Prismi: <strong className="text-indigo-300">{adcAmount}%</strong>
+                        Rotazione Prismi: <strong className="text-neutral-100">{adcAmount}%</strong>
                       </span>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px] text-neutral-500">
                         correzione {adcCorrection.toFixed(2)}″
                       </span>
                     </div>
@@ -375,18 +387,18 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
                       step={1}
                       value={adcAmount}
                       onChange={(e) => setAdcAmount(Number(e.target.value))}
-                      className="w-full accent-indigo-500 cursor-pointer"
+                      className="w-full cursor-pointer"
                     />
                     <button
                       type="button"
                       onClick={() => setAdcAmount(Math.round(perfectAdc))}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 text-amber-300 border border-slate-700 hover:bg-slate-800 transition"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-neutral-900 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition"
                     >
                       <Wand2 className="w-3.5 h-3.5" />
                       Regola per questa altezza
                     </button>
                     {dispersion > ADC_MAX_CORRECTION && (
-                      <p className="text-[11px] text-rose-400">
+                      <p className="text-[11px] text-warn">
                         A questa altezza la dispersione supera la corsa massima dei prismi ({ADC_MAX_CORRECTION}″): nessun
                         ADC riesce a correggerla del tutto.
                       </p>
@@ -397,44 +409,21 @@ export const TabSimulatorSeeingAdc: React.FC = () => {
             </>
           }
         >
-        {/* Readouts */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Massa d'Aria</div>
-            <div className="text-xl font-extrabold text-slate-200">{mass.toFixed(2)}</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">Allo zenit vale 1,00</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Dispersione Atmosferica</div>
-            <div className="text-xl font-extrabold text-cyan-300">{dispersion.toFixed(2)}″</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">Distanza blu-rosso</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Residuo dopo ADC</div>
-            <div className={`text-xl font-extrabold ${residualClass}`}>{Math.abs(residual).toFixed(2)}″</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">{adcEnabled ? residualLabel : 'ADC non inserito'}</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Seeing Effettivo</div>
-            <div className="text-xl font-extrabold text-amber-400">{effectiveSeeing.toFixed(2)}″</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">{seeing.toFixed(1)}″ allo zenit</div>
-          </div>
-        </div>
 
         <DismissibleInfoPanel
           id="sim-seeing-adc-note"
-          icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
-          className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-300"
+          icon={<Info className="w-5 h-5 text-neutral-200 shrink-0 mt-0.5" />}
+          className="bg-neutral-900/40 border border-neutral-700 rounded-md p-4 flex items-start gap-3 text-xs text-neutral-300"
         >
-          <span className="font-bold text-indigo-200">Perché non conviene riprendere i pianeti troppo bassi</span>
+          <span className="font-semibold text-neutral-50">Perché non conviene riprendere i pianeti troppo bassi</span>
           <p className="mt-1 leading-relaxed">
             L'atmosfera devia la luce di una quantità che dipende dal colore: il blu viene deviato più del rosso, così
             il pianeta si allarga in un piccolo spettro verticale. L'effetto cresce con la{' '}
-            <strong className="text-slate-100">tangente della distanza zenitale</strong>: è trascurabile allo zenit,
+            <strong className="text-neutral-100">tangente della distanza zenitale</strong>: è trascurabile allo zenit,
             vale circa 1,2″ a 45° di altezza e supera 4,5″ a 15°, molto più del dettaglio più fine che il telescopio
             riesce a risolvere. In più, a bassa altezza la luce attraversa molta più aria (la massa d'aria passa da
             1,0 a oltre 3,8 a 15°) e la turbolenza gonfia di conseguenza il{' '}
-            <strong className="text-amber-300">seeing</strong>. L'<strong className="text-indigo-300">ADC</strong>{' '}
+            <strong className="text-neutral-100">seeing</strong>. L'<strong className="text-neutral-100">ADC</strong>{' '}
             interviene solo sul primo problema: due prismi ruotabili introducono una dispersione uguale e opposta a
             quella atmosferica, riportando i colori a registro. Ruotandoli troppo si sovra-corregge e le frange si
             invertono. Il seeing, invece, non si corregge con l'ottica: l'unico rimedio è aspettare che il soggetto

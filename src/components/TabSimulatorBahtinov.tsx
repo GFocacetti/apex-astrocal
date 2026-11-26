@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Info, Focus, Shuffle, Minus, Plus } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
 import { SimulatorStage } from './SimulatorStage';
-import { ApexIcon } from './ApexIcon';
 
 // Focus error range, in arbitrary "focuser steps". Zero is perfect focus.
 const FOCUS_RANGE = 120;
@@ -133,7 +132,7 @@ function drawScene(
     ctx.arc(cx, cy, radius * 2.6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Well out of focus a reflector shows the shadow of the secondary mirror.
+    // Well out of focus a reflector shows the  of the secondary mirror.
     if (err > 28) {
       const hole = Math.min(radius * 0.55, (err - 28) * 0.12);
       ctx.globalCompositeOperation = 'destination-out';
@@ -177,15 +176,15 @@ const MaskDiagram: React.FC = () => {
       {/* Mounting tabs around the rim */}
       {[-55, 55, 180].map((a) => (
         <g key={a} transform={`rotate(${a} 60 60)`}>
-          <rect x="54.5" y="2" width="11" height="12" rx="2.5" fill="#0f172a" stroke="#334155" strokeWidth="1.5" />
-          <line x1="60" y1="5" x2="60" y2="11" stroke="#475569" strokeWidth="2" strokeLinecap="round" />
+          <rect x="54.5" y="2" width="11" height="12" rx="2.5" fill="#171717" stroke="#404040" strokeWidth="1.5" />
+          <line x1="60" y1="5" x2="60" y2="11" stroke="#525252" strokeWidth="2" strokeLinecap="round" />
         </g>
       ))}
 
       {/* Body of the mask */}
-      <circle cx="60" cy="60" r="51" fill="#0f172a" stroke="#334155" strokeWidth="2" />
+      <circle cx="60" cy="60" r="51" fill="#171717" stroke="#404040" strokeWidth="2" />
 
-      <g clipPath="url(#bahtinov-disc)" stroke="#64748b" strokeWidth="3.2" strokeLinecap="butt">
+      <g clipPath="url(#bahtinov-disc)" stroke="#737373" strokeWidth="3.2" strokeLinecap="butt">
         {/* Upper half: bars running straight up and down */}
         <g clipPath="url(#bahtinov-top)">
           {bars.map((d) => (
@@ -267,29 +266,21 @@ export const TabSimulatorBahtinov: React.FC = () => {
         : 'Spike centrale spostato a sinistra';
 
   const statusClass = !maskOn
-    ? 'text-slate-400'
+    ? 'text-neutral-400'
     : isPerfect
-      ? 'text-emerald-400'
+      ? 'text-neutral-200'
       : err < 12
-        ? 'text-amber-400'
-        : 'text-rose-400';
+        ? 'text-neutral-200'
+        : 'text-warn';
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Simulatori Interattivi
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Maschera di Bahtinov
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Simulatore 05 / 10</div>
+          <h2 className="page-title">Maschera di Bahtinov</h2>
+          <p className="lead">
             Prova a mettere a fuoco una stella guardando solo il suo disco: è quasi impossibile capire da che parte
             sbagli. Poi inserisci la maschera di Bahtinov e trova il punto in cui lo spike centrale passa esattamente
             per il centro della X. È così che si mette a fuoco in astrofotografia.
@@ -297,11 +288,10 @@ export const TabSimulatorBahtinov: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <Focus className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300">
+            <h3 className="section-title">
               Vista al Sensore
             </h3>
           </div>
@@ -310,24 +300,50 @@ export const TabSimulatorBahtinov: React.FC = () => {
             onClick={() => setMaskOn((v) => !v)}
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
               maskOn
-                ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50'
-                : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                ? 'bg-neutral-100 text-neutral-950 border-neutral-100'
+                : 'bg-neutral-950 text-neutral-400 border-neutral-700 hover:text-neutral-200'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${maskOn ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+            <span className={`w-2 h-2 rounded-full ${maskOn ? 'bg-accent' : 'bg-neutral-700'}`} />
             {maskOn ? 'Maschera inserita' : 'Applica Bahtinov'}
           </button>
         </div>
 
         <SimulatorStage
+          readouts={
+            <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Errore di Fuoco</div>
+            <div className={`text-xl font-medium ${isPerfect ? 'text-neutral-200' : 'text-neutral-200'}`}>
+              {focus > 0 ? '+' : ''}
+              {focus}
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">passi del focheggiatore</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Scostamento Spike</div>
+            <div className={`text-xl font-medium ${isPerfect ? 'text-neutral-200' : 'text-neutral-100'}`}>
+              {shiftPx.toFixed(1)} px
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">
+              {maskOn ? 'rispetto al centro della X' : 'visibile solo con la maschera'}
+            </div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Diametro Stella</div>
+            <div className="text-xl font-medium text-neutral-200">{(2.4 + err * 0.24).toFixed(1)} px</div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">senza maschera</div>
+          </div>
+        </div>
+          }
           view={
-            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-md bg-neutral-950">
               <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-              <div className="absolute top-3 left-3 text-[11px] bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <span className={`font-bold ${statusClass}`}>{statusText}</span>
+              <div className="absolute top-3 left-3 text-[11px] bg-neutral-950/75 border border-neutral-800 rounded-lg px-2.5 py-1.5">
+                <span className={`font-semibold ${statusClass}`}>{statusText}</span>
               </div>
               {maskOn && isPerfect && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 rounded-lg px-3 py-1.5">
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] font-semibold text-neutral-100 bg-white/5 border border-neutral-600 rounded-lg px-3 py-1.5">
                   A fuoco — puoi iniziare a riprendere
                 </div>
               )}
@@ -336,15 +352,15 @@ export const TabSimulatorBahtinov: React.FC = () => {
           controls={
             <>
           <div>
-            <div className="flex justify-between text-xs text-slate-300 mb-1">
+            <div className="flex justify-between text-xs text-neutral-300 mb-1">
               <span>
                 Manopola del Fuoco:{' '}
-                <strong className={isPerfect ? 'text-emerald-400' : 'text-amber-400'}>
+                <strong className={isPerfect ? 'text-neutral-200' : 'text-neutral-200'}>
                   {focus > 0 ? '+' : ''}
                   {focus}
                 </strong>
               </span>
-              <span className="text-[10px] text-slate-500">intra-focale ← 0 → extra-focale</span>
+              <span className="text-[10px] text-neutral-500">intra-focale ← 0 → extra-focale</span>
             </div>
             <input
               type="range"
@@ -353,16 +369,16 @@ export const TabSimulatorBahtinov: React.FC = () => {
               step={1}
               value={focus}
               onChange={(e) => setFocus(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
+              className="w-full cursor-pointer"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] text-slate-400 mr-1">Grossolana</span>
+            <span className="text-[11px] text-neutral-400 mr-1">Grossolana</span>
             <button
               type="button"
               onClick={() => nudge(-10)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-neutral-950 text-neutral-300 border border-neutral-700 hover:bg-neutral-800 transition"
             >
               <Minus className="w-3.5 h-3.5" />
               10
@@ -370,24 +386,24 @@ export const TabSimulatorBahtinov: React.FC = () => {
             <button
               type="button"
               onClick={() => nudge(10)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-neutral-950 text-neutral-300 border border-neutral-700 hover:bg-neutral-800 transition"
             >
               <Plus className="w-3.5 h-3.5" />
               10
             </button>
 
-            <span className="text-[11px] text-slate-400 ml-3 mr-1">Fine</span>
+            <span className="text-[11px] text-neutral-400 ml-3 mr-1">Fine</span>
             <button
               type="button"
               onClick={() => nudge(-1)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-cyan-300 border border-slate-700 hover:bg-slate-800 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-neutral-950 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition"
             >
               <Minus className="w-3.5 h-3.5" />1
             </button>
             <button
               type="button"
               onClick={() => nudge(1)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-cyan-300 border border-slate-700 hover:bg-slate-800 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-neutral-950 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition"
             >
               <Plus className="w-3.5 h-3.5" />1
             </button>
@@ -395,13 +411,13 @@ export const TabSimulatorBahtinov: React.FC = () => {
             <button
               type="button"
               onClick={randomize}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-amber-300 border border-slate-700 hover:bg-slate-800 transition ml-auto"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-neutral-950 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition ml-auto"
             >
               <Shuffle className="w-3.5 h-3.5" />
               Sfoca a caso e riprova
             </button>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-neutral-500">
             Prova prima senza maschera: attorno allo zero il disco cambia così poco che non capisci da che parte
             stai sbagliando. Con la maschera inserita, invece, lo spostamento dello spike centrale te lo dice subito,
             e ti dice anche <em>in che verso</em> correggere.
@@ -409,70 +425,45 @@ export const TabSimulatorBahtinov: React.FC = () => {
             </>
           }
         >
-        {/* Readouts */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Errore di Fuoco</div>
-            <div className={`text-xl font-extrabold ${isPerfect ? 'text-emerald-400' : 'text-amber-400'}`}>
-              {focus > 0 ? '+' : ''}
-              {focus}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">passi del focheggiatore</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Scostamento Spike</div>
-            <div className={`text-xl font-extrabold ${isPerfect ? 'text-emerald-400' : 'text-cyan-300'}`}>
-              {shiftPx.toFixed(1)} px
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {maskOn ? 'rispetto al centro della X' : 'visibile solo con la maschera'}
-            </div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Diametro Stella</div>
-            <div className="text-xl font-extrabold text-slate-200">{(2.4 + err * 0.24).toFixed(1)} px</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">senza maschera</div>
-          </div>
-        </div>
 
         <DismissibleInfoPanel
           id="sim-bahtinov-note"
-          icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
-          className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-300"
+          icon={<Info className="w-5 h-5 text-neutral-200 shrink-0 mt-0.5" />}
+          className="bg-neutral-900/40 border border-neutral-700 rounded-md p-4 flex items-start gap-3 text-xs text-neutral-300"
         >
-          <span className="font-bold text-indigo-200">Come funziona davvero la maschera di Bahtinov</span>
+          <span className="font-semibold text-neutral-50">Come funziona davvero la maschera di Bahtinov</span>
           <p className="mt-1 leading-relaxed">
             La maschera è un disco forato che si appoggia davanti all'obiettivo del telescopio e sfrutta la{' '}
-            <strong className="text-slate-100">diffrazione</strong>: ogni gruppo di fessure parallele trasforma la
+            <strong className="text-neutral-100">diffrazione</strong>: ogni gruppo di fessure parallele trasforma la
             luce di una stella in una lunga riga luminosa perpendicolare alle fessure stesse. I due gruppi inclinati
-            (a circa ±{SPIKE_HALF_ANGLE}°) producono i due bracci della <strong className="text-slate-100">X</strong>
-            , il gruppo dritto produce lo <strong className="text-amber-300">spike centrale</strong>. Quando il piano
+            (a circa ±{SPIKE_HALF_ANGLE}°) producono i due bracci della <strong className="text-neutral-100">X</strong>
+            , il gruppo dritto produce lo <strong className="text-neutral-100">spike centrale</strong>. Quando il piano
             focale è esattamente sul sensore, i tre spike si incontrano nello stesso punto e la figura è
             perfettamente simmetrica. Appena sposti il fuoco, il fascio che genera lo spike centrale arriva al
             sensore con un angolo leggermente diverso rispetto agli altri due, e la sua riga{' '}
-            <strong className="text-slate-100">trasla lateralmente</strong> rispetto all'incrocio della X: da che
+            <strong className="text-neutral-100">trasla lateralmente</strong> rispetto all'incrocio della X: da che
             parte si sposta ti dice se sei <em>intra-focale</em> o <em>extra-focale</em>, e di quanto. Il punto
             di forza è la sensibilità: l'occhio riconosce un disallineamento tra due linee molto meglio di quanto
             sappia giudicare se un disco è "un po' più piccolo" — ecco perché con la maschera si mette a fuoco in
             pochi secondi e con una precisione altrimenti irraggiungibile. Usala su una stella luminosa (magnitudine
             1-3), a ingrandimento pieno sullo schermo, e ricordati di{' '}
-            <strong className="text-rose-300">toglierla prima di iniziare a riprendere</strong>: lasciata su, taglia
+            <strong className="text-warn">toglierla prima di iniziare a riprendere</strong>: lasciata su, taglia
             gran parte della luce e riempie l'immagine di spike. Rifai il fuoco durante la notte, perché il
             raffreddamento del tubo lo fa migrare.
           </p>
         </DismissibleInfoPanel>
 
         {/* Mask diagram */}
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-          <div className="text-sm font-bold text-slate-100 mb-3">La maschera</div>
+        <div className="bg-neutral-950 border border-neutral-800 rounded-md p-4">
+          <div className="text-sm font-semibold text-neutral-100 mb-3">La maschera</div>
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="w-40 h-40 shrink-0">
               <MaskDiagram />
             </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-[11px] text-neutral-400 leading-relaxed">
               Tre gruppi di fessure parallele ricavate in un unico disco. Il gruppo dritto genera lo spike centrale,
               i due gruppi inclinati di ±{SPIKE_HALF_ANGLE}° formano i bracci della X. Ogni gruppo produce una riga
-              luminosa <strong className="text-slate-200">perpendicolare</strong> alle proprie fessure. La maschera si
+              luminosa <strong className="text-neutral-200">perpendicolare</strong> alle proprie fessure. La maschera si
               appoggia davanti all'apertura del telescopio e si può montare con qualsiasi rotazione: gli spike ruotano
               insieme a lei, quindi conta solo la loro simmetria, non il loro orientamento.
             </p>

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Telescope, Info, Sparkles } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
 import { SimulatorStage } from './SimulatorStage';
-import { ApexIcon } from './ApexIcon';
 
 // Apparent field: the upper bound is the widest eyepiece ever sold, the Explore
 // Scientific 9mm 120°. The lower bound sits below anything currently in
@@ -372,21 +371,13 @@ export const TabSimulatorEyepiece: React.FC = () => {
   }, [size, realFov, pxPerDeg]);
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Simulatori Interattivi
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Campo Apparente dell'Oculare
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Simulatore 01 / 10</div>
+          <h2 className="page-title">Campo apparente dell'oculare</h2>
+          <p className="lead">
             Sposta i cursori per capire la differenza tra campo apparente e ingrandimento: l'oblò che vedi
             all'oculare cambia dimensione solo con il campo apparente, mentre l'ingrandimento avvicina il soggetto
             senza allargare la finestra.
@@ -394,17 +385,39 @@ export const TabSimulatorEyepiece: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 sm:p-6 space-y-6">
         <div className="flex items-center gap-2">
-          <Telescope className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300">
+          <h3 className="section-title">
             Simulazione della Vista all'Oculare
           </h3>
         </div>
 
         <SimulatorStage
+          readouts={
+            <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
+            <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+              <div className="text-[11px] text-neutral-400">Ingrandimento</div>
+              <div className="text-xl font-medium text-neutral-200">{Math.round(magnification)}×</div>
+              <div className="text-[10px] text-neutral-500 mt-0.5">
+                {telescopeFocal} mm / {focalLength} mm
+              </div>
+            </div>
+            <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+              <div className="text-[11px] text-neutral-400">Campo Reale Inquadrato</div>
+              <div className="text-xl font-medium text-neutral-100">{realFov.toFixed(2)}°</div>
+              <div className="text-[10px] text-neutral-500 mt-0.5">
+                {(realFov * 60).toFixed(1)}′ · {afov}° / {Math.round(magnification)}×
+              </div>
+            </div>
+            <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+              <div className="text-[11px] text-neutral-400">Lune Piene Affiancate</div>
+              <div className="text-xl font-medium text-neutral-200">{(realFov / 0.52).toFixed(1)}</div>
+              <div className="text-[10px] text-neutral-500 mt-0.5">La Luna misura circa 0,52°</div>
+            </div>
+          </div>
+          }
           view={
-            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-md bg-neutral-950">
               <canvas
                 ref={canvasRef}
                 style={{ width: size.w, height: size.h }}
@@ -419,7 +432,7 @@ export const TabSimulatorEyepiece: React.FC = () => {
               />
               {/* Eyepiece field stop ring */}
               <div
-                className="absolute left-1/2 top-1/2 rounded-full pointer-events-none border border-slate-500/40"
+                className="absolute left-1/2 top-1/2 rounded-full pointer-events-none border border-neutral-500/40"
                 style={{
                   width: holeRadiusPx * 2,
                   height: holeRadiusPx * 2,
@@ -427,22 +440,22 @@ export const TabSimulatorEyepiece: React.FC = () => {
                   boxShadow: 'inset 0 0 30px rgba(0,0,0,0.9)',
                 }}
               />
-              <div className="absolute bottom-3 left-3 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                Campo Apparente <span className="text-cyan-300 font-bold">{afov}°</span> · Ingrandimento{' '}
-                <span className="text-amber-300 font-bold">{Math.round(magnification)}×</span>
+              <div className="absolute bottom-3 left-3 text-[11px] text-neutral-400 bg-neutral-950/70 border border-neutral-800 rounded-lg px-2.5 py-1.5">
+                Campo Apparente <span className="text-neutral-100 font-semibold">{afov}°</span> · Ingrandimento{' '}
+                <span className="text-neutral-100 font-semibold">{Math.round(magnification)}×</span>
               </div>
-              <div className="absolute top-3 left-3 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <span className="text-slate-200 font-bold">M42</span> · Nebulosa di Orione ·{' '}
-                <span className="text-slate-300">{M42_WIDTH_DEG.toFixed(1).replace('.', ',')}°</span>
+              <div className="absolute top-3 left-3 text-[11px] text-neutral-400 bg-neutral-950/70 border border-neutral-800 rounded-lg px-2.5 py-1.5">
+                <span className="text-neutral-200 font-semibold">M42</span> · Nebulosa di Orione ·{' '}
+                <span className="text-neutral-300">{M42_WIDTH_DEG.toFixed(1).replace('.', ',')}°</span>
               </div>
             </div>
           }
           controls={
             <>
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
-                    Campo Apparente (AFOV): <strong className="text-cyan-400">{afov}°</strong>
+                    Campo Apparente (AFOV): <strong className="text-neutral-200">{afov}°</strong>
                   </span>
                 </div>
                 <input
@@ -452,19 +465,19 @@ export const TabSimulatorEyepiece: React.FC = () => {
                   step={1}
                   value={afov}
                   onChange={(e) => setAfov(Number(e.target.value))}
-                  className="w-full accent-cyan-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
               </div>
 
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
                     Focale Oculare:{' '}
-                    <strong className="text-indigo-300">
+                    <strong className="text-neutral-100">
                       {focalLength.toFixed(1).replace(/\.0$/, '')} mm
                     </strong>
                   </span>
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-neutral-500">
                     {EYEPIECE_MIN} mm ← in commercio → {EYEPIECE_MAX} mm
                   </span>
                 </div>
@@ -475,7 +488,7 @@ export const TabSimulatorEyepiece: React.FC = () => {
                   step={0.1}
                   value={focalLength}
                   onChange={(e) => setFocalLength(Number(e.target.value))}
-                  className="w-full accent-indigo-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
                 <div className="flex gap-1.5 mt-2 flex-wrap">
                   {[1.6, 3.5, 6, 10, 17, 25, 40, 56, 80].map((f) => (
@@ -485,8 +498,8 @@ export const TabSimulatorEyepiece: React.FC = () => {
                       onClick={() => setFocalLength(f)}
                       className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border transition ${
                         focalLength === f
-                          ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50'
-                          : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-slate-200'
+                          ? 'bg-neutral-100 text-neutral-950 border-neutral-100'
+                          : 'bg-neutral-950 text-neutral-400 border-neutral-700 hover:text-neutral-200'
                       }`}
                     >
                       {f}
@@ -496,11 +509,11 @@ export const TabSimulatorEyepiece: React.FC = () => {
               </div>
 
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
-                    Lunghezza focale: <strong className="text-amber-400">{telescopeFocal} mm</strong>
+                    Lunghezza focale: <strong className="text-neutral-200">{telescopeFocal} mm</strong>
                   </span>
-                  <span className="text-[10px] text-slate-500">del telescopio</span>
+                  <span className="text-[10px] text-neutral-500">del telescopio</span>
                 </div>
                 <input
                   type="range"
@@ -509,47 +522,25 @@ export const TabSimulatorEyepiece: React.FC = () => {
                   step={10}
                   value={telescopeFocal}
                   onChange={(e) => setTelescopeFocal(Number(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
               </div>
             </>
           }
         >
-          {/* Readouts */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-              <div className="text-[11px] text-slate-400">Ingrandimento</div>
-              <div className="text-xl font-extrabold text-amber-400">{Math.round(magnification)}×</div>
-              <div className="text-[10px] text-slate-500 mt-0.5">
-                {telescopeFocal} mm / {focalLength} mm
-              </div>
-            </div>
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-              <div className="text-[11px] text-slate-400">Campo Reale Inquadrato</div>
-              <div className="text-xl font-extrabold text-cyan-300">{realFov.toFixed(2)}°</div>
-              <div className="text-[10px] text-slate-500 mt-0.5">
-                {(realFov * 60).toFixed(1)}′ · {afov}° / {Math.round(magnification)}×
-              </div>
-            </div>
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-              <div className="text-[11px] text-slate-400">Lune Piene Affiancate</div>
-              <div className="text-xl font-extrabold text-slate-200">{(realFov / 0.52).toFixed(1)}</div>
-              <div className="text-[10px] text-slate-500 mt-0.5">La Luna misura circa 0,52°</div>
-            </div>
-          </div>
 
           <DismissibleInfoPanel
           id="sim-eyepiece-afov-note"
-          icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
-          className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-300"
+          icon={<Info className="w-5 h-5 text-neutral-200 shrink-0 mt-0.5" />}
+          className="bg-neutral-900/40 border border-neutral-700 rounded-md p-4 flex items-start gap-3 text-xs text-neutral-300"
         >
-            <span className="font-bold text-indigo-200">Campo apparente e ingrandimento non sono la stessa cosa</span>
+            <span className="font-semibold text-neutral-50">Campo apparente e ingrandimento non sono la stessa cosa</span>
             <p className="mt-1 leading-relaxed">
-              Il <strong className="text-cyan-300">campo apparente</strong> è una caratteristica costruttiva
+              Il <strong className="text-neutral-100">campo apparente</strong> è una caratteristica costruttiva
               dell'oculare: determina quanto è ampio l'oblò attraverso cui guardi, e non cambia se modifichi il
-              telescopio. L'<strong className="text-amber-300">ingrandimento</strong> (focale del telescopio divisa
+              telescopio. L'<strong className="text-neutral-100">ingrandimento</strong> (focale del telescopio divisa
               per la focale dell'oculare) avvicina il soggetto, ma non allarga la finestra: anzi, più ingrandisci e
-              meno cielo entra nel campo. Il <strong className="text-slate-100">campo reale</strong> che inquadri
+              meno cielo entra nel campo. Il <strong className="text-neutral-100">campo reale</strong> che inquadri
               davvero è il campo apparente diviso l'ingrandimento. Per questo un oculare grandangolare a forte
               ingrandimento offre una vista molto più immersiva di un oculare stretto, pur mostrando la stessa
               porzione di cielo.

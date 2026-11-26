@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Sparkles, Info, Ruler, Shuffle } from 'lucide-react';
 import { DismissibleInfoPanel } from './DismissibleInfoPanel';
 import { SimulatorStage } from './SimulatorStage';
-import { ApexIcon } from './ApexIcon';
 
 // Almost every refractor flattener and reducer is designed for 55 mm of back
 // focus, measured from its rear shoulder to the sensor surface.
@@ -116,7 +115,7 @@ export const TabSimulatorBackfocus: React.FC = () => {
       ? 'Sensore troppo lontano: allungamento radiale agli angoli'
       : 'Sensore troppo vicino: allungamento tangenziale agli angoli';
 
-  const verdictClass = isGood ? 'text-emerald-400' : absErr < 2 ? 'text-amber-400' : 'text-rose-400';
+  const verdictClass = isGood ? 'text-neutral-200' : absErr < 2 ? 'text-neutral-200' : 'text-warn';
 
   // Elongation suffered by a star right in the corner, as a percentage.
   const cornerElong = useMemo(() => absErr * 0.55 * 100, [absErr]);
@@ -173,21 +172,13 @@ export const TabSimulatorBackfocus: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-10">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-2 opacity-10 pointer-events-none">
-          <ApexIcon className="w-32 h-32" />
-        </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Simulatori Interattivi
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-            Il Rompicapo del Backfocus
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+      <div className="page-header">
+        <div className="max-w-3xl">
+          <div className="eyebrow">Simulatore 08 / 10</div>
+          <h2 className="page-title">Il rompicapo del backfocus</h2>
+          <p className="lead">
             Lo spianatore di campo funziona solo a una distanza precisa dal sensore. Sbagliala di pochi millimetri e
             il centro resta perfetto mentre gli angoli si riempiono di stelle allungate. Muovi il cursore e impara a
             riconoscere il difetto — e da che parte correggerlo.
@@ -195,22 +186,56 @@ export const TabSimulatorBackfocus: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 sm:p-6 space-y-6">
         <div className="flex items-center gap-2 flex-wrap">
-          <Ruler className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300">
+          <h3 className="section-title">
             Spaziatura {spacing.toFixed(1)} mm · richiesti {TARGET_MM} mm
           </h3>
         </div>
 
         <SimulatorStage
+          readouts={
+            <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Errore di Spaziatura</div>
+            <div className={`text-xl font-medium ${verdictClass}`}>
+              {errorMm > 0 ? '+' : ''}
+              {errorMm.toFixed(1)} mm
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">rispetto ai {TARGET_MM} mm richiesti</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Allungamento agli Angoli</div>
+            <div className={`text-xl font-medium ${isGood ? 'text-neutral-200' : 'text-warn'}`}>
+              {cornerElong.toFixed(0)}%
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">rispetto a una stella tonda</div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Direzione</div>
+            <div className="text-xl font-medium text-neutral-100">
+              {isGood ? '—' : errorMm > 0 ? 'Radiale' : 'Tangenziale'}
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">
+              {isGood ? 'stelle tonde' : errorMm > 0 ? 'puntano verso il centro' : 'archi attorno al centro'}
+            </div>
+          </div>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
+            <div className="text-[11px] text-neutral-400">Correzione</div>
+            <div className="text-xl font-medium text-neutral-200">
+              {isGood ? 'nessuna' : `${errorMm > 0 ? 'togli' : 'aggiungi'} ${absErr.toFixed(1)}`}
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-0.5">{isGood ? 'sei in tolleranza' : 'mm di spessori'}</div>
+          </div>
+        </div>
+          }
           view={
-            <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-950">
+            <div ref={containerRef} className="relative w-full overflow-hidden rounded-md bg-neutral-950">
               <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block" />
-              <div className="absolute top-3 left-3 text-[11px] bg-slate-950/75 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <span className={`font-bold ${verdictClass}`}>{verdict}</span>
+              <div className="absolute top-3 left-3 text-[11px] bg-neutral-950/75 border border-neutral-800 rounded-lg px-2.5 py-1.5">
+                <span className={`font-semibold ${verdictClass}`}>{verdict}</span>
               </div>
-              <div className="absolute bottom-3 right-3 text-[10px] text-slate-500 bg-slate-950/70 border border-slate-800 rounded-lg px-2 py-1">
+              <div className="absolute bottom-3 right-3 text-[10px] text-neutral-500 bg-neutral-950/70 border border-neutral-800 rounded-lg px-2 py-1">
                 il centro resta sempre a fuoco
               </div>
             </div>
@@ -218,12 +243,12 @@ export const TabSimulatorBackfocus: React.FC = () => {
           controls={
             <>
               <div>
-                <div className="flex justify-between text-xs text-slate-300 mb-1">
+                <div className="flex justify-between text-xs text-neutral-300 mb-1">
                   <span>
                     Distanza spianatore-sensore:{' '}
-                    <strong className={isGood ? 'text-emerald-400' : 'text-amber-400'}>{spacing.toFixed(1)} mm</strong>
+                    <strong className={isGood ? 'text-neutral-200' : 'text-neutral-200'}>{spacing.toFixed(1)} mm</strong>
                   </span>
-                  <span className="text-[10px] text-slate-500">troppo vicino ← {TARGET_MM} mm → troppo lontano</span>
+                  <span className="text-[10px] text-neutral-500">troppo vicino ← {TARGET_MM} mm → troppo lontano</span>
                 </div>
                 <input
                   type="range"
@@ -232,18 +257,18 @@ export const TabSimulatorBackfocus: React.FC = () => {
                   step={0.5}
                   value={spacing}
                   onChange={(e) => setSpacing(Number(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer"
+                  className="w-full cursor-pointer"
                 />
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] text-slate-400 mr-1">Spessori comuni</span>
+                <span className="text-[11px] text-neutral-400 mr-1">Spessori comuni</span>
                 {[-5, -2, -0.5, 0.5, 2, 5].map((d) => (
                   <button
                     key={d}
                     type="button"
                     onClick={() => setSpacing((s) => Math.max(MIN_MM, Math.min(MAX_MM, Number((s + d).toFixed(1)))))}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-neutral-950 text-neutral-300 border border-neutral-700 hover:bg-neutral-800 transition"
                   >
                     {d > 0 ? '+' : ''}
                     {d} mm
@@ -252,14 +277,14 @@ export const TabSimulatorBackfocus: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSpacing(TARGET_MM)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition"
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/5 text-neutral-100 border border-neutral-600 hover:bg-white/5 transition"
                 >
                   Esattamente {TARGET_MM} mm
                 </button>
                 <button
                   type="button"
                   onClick={randomize}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 text-amber-300 border border-slate-700 hover:bg-slate-800 transition ml-auto"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-neutral-950 text-neutral-100 border border-neutral-700 hover:bg-neutral-800 transition ml-auto"
                 >
                   <Shuffle className="w-3.5 h-3.5" />
                   Sbaglia a caso
@@ -270,90 +295,56 @@ export const TabSimulatorBackfocus: React.FC = () => {
         >
         {/* Magnified corners */}
         <div>
-          <div className="text-[11px] text-slate-400 mb-2">
+          <div className="text-[11px] text-neutral-400 mb-2">
             Angoli ingranditi — è qui che si giudica, non al centro
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {['in alto a sinistra', 'in alto a destra', 'in basso a sinistra', 'in basso a destra'].map((label, i) => (
-              <div key={label} className="bg-slate-950 border border-slate-800 rounded-xl p-2">
+              <div key={label} className="bg-neutral-950 border border-neutral-800 rounded-md p-2">
                 <canvas
                   ref={cornerRefs[i]}
                   style={{ width: 128, height: 128 }}
                   className="block w-full rounded-lg"
                 />
-                <div className="text-[10px] text-slate-500 mt-1.5 text-center">{label}</div>
+                <div className="text-[10px] text-neutral-500 mt-1.5 text-center">{label}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Readouts */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Errore di Spaziatura</div>
-            <div className={`text-xl font-extrabold ${verdictClass}`}>
-              {errorMm > 0 ? '+' : ''}
-              {errorMm.toFixed(1)} mm
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">rispetto ai {TARGET_MM} mm richiesti</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Allungamento agli Angoli</div>
-            <div className={`text-xl font-extrabold ${isGood ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {cornerElong.toFixed(0)}%
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">rispetto a una stella tonda</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Direzione</div>
-            <div className="text-xl font-extrabold text-cyan-300">
-              {isGood ? '—' : errorMm > 0 ? 'Radiale' : 'Tangenziale'}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {isGood ? 'stelle tonde' : errorMm > 0 ? 'puntano verso il centro' : 'archi attorno al centro'}
-            </div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400">Correzione</div>
-            <div className="text-xl font-extrabold text-amber-400">
-              {isGood ? 'nessuna' : `${errorMm > 0 ? 'togli' : 'aggiungi'} ${absErr.toFixed(1)}`}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">{isGood ? 'sei in tolleranza' : 'mm di spessori'}</div>
-          </div>
-        </div>
 
         <DismissibleInfoPanel
           id="sim-backfocus-note"
-          icon={<Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
-          className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-300"
+          icon={<Info className="w-5 h-5 text-neutral-200 shrink-0 mt-0.5" />}
+          className="bg-neutral-900/40 border border-neutral-700 rounded-md p-4 flex items-start gap-3 text-xs text-neutral-300"
         >
-          <span className="font-bold text-indigo-200">Che cos'è il backfocus e come si diagnostica</span>
+          <span className="font-semibold text-neutral-50">Che cos'è il backfocus e come si diagnostica</span>
           <p className="mt-1 leading-relaxed">
-            Uno <strong className="text-slate-100">spianatore di campo</strong> (o un riduttore, o un correttore di
+            Uno <strong className="text-neutral-100">spianatore di campo</strong> (o un riduttore, o un correttore di
             coma) è calcolato per lavorare a una distanza ben precisa dal piano del sensore: quasi sempre{' '}
-            <strong className="text-amber-300">55 mm</strong> misurati dalla sua battuta posteriore. In quella
+            <strong className="text-neutral-100">55 mm</strong> misurati dalla sua battuta posteriore. In quella
             distanza rientra tutto ciò che sta in mezzo — anello adattatore, ruota portafiltri, tiraggio della
             camera, spessore del filtro — ed è per questo che i costruttori dichiarano il backfocus della camera
             fino alla superficie del sensore. Da notare che un filtro nel percorso ottico{' '}
-            <strong className="text-slate-100">allunga</strong> il cammino di circa un terzo del proprio spessore:
+            <strong className="text-neutral-100">allunga</strong> il cammino di circa un terzo del proprio spessore:
             un filtro da 3 mm sposta il fuoco di circa 1 mm, e va messo in conto.
             <br />
             <br />
-            <strong className="text-slate-100">Come si riconosce.</strong> Il segno distintivo non è la forma delle
+            <strong className="text-neutral-100">Come si riconosce.</strong> Il segno distintivo non è la forma delle
             stelle, ma <em>dove</em> si deformano: con il backfocus sbagliato il centro del campo resta perfetto e
             il degrado cresce verso i bordi, in modo simmetrico nei quattro angoli. Se invece un angolo è molto
             peggiore di quello opposto non è backfocus ma{' '}
-            <strong className="text-slate-100">tilt</strong>, cioè il sensore non è perpendicolare all'asse ottico.
+            <strong className="text-neutral-100">tilt</strong>, cioè il sensore non è perpendicolare all'asse ottico.
             Se sono sgranate anche le stelle al centro, il problema è semplicemente la messa a fuoco, o
             l'inseguimento.
             <br />
             <br />
-            <strong className="text-slate-100">In che verso correggere.</strong> Si dice comunemente che una
+            <strong className="text-neutral-100">In che verso correggere.</strong> Si dice comunemente che una
             distanza eccessiva produca allungamenti <em>radiali</em> (le stelle puntano verso il centro) e una
             distanza insufficiente allungamenti <em>tangenziali</em> (archi concentrici), ed è la convenzione usata
             in questo simulatore. Attenzione però: il verso dipende dallo schema ottico del correttore, e su alcuni
             modelli è invertito. Il metodo davvero affidabile è empirico: cambia la spaziatura di{' '}
-            <strong className="text-slate-100">2-3 mm in una direzione</strong> e scatta di nuovo. Se gli angoli
+            <strong className="text-neutral-100">2-3 mm in una direzione</strong> e scatta di nuovo. Se gli angoli
             migliorano prosegui in quel verso, se peggiorano torna indietro e vai dall'altra parte. Bastano pochi
             tentativi per convergere, e conviene farli su un campo stellare ricco, a fuoco perfetto e con
             l'inseguimento in ordine, altrimenti si finisce per inseguire il problema sbagliato.

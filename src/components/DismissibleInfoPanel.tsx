@@ -49,7 +49,7 @@ export const DismissibleInfoPanel: React.FC<DismissibleInfoPanelProps> = ({ id, 
         onClick={handleDismiss}
         aria-label="Chiudi"
         title="Chiudi"
-        className="shrink-0 p-1 -m-1 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800/60 transition"
+        className="shrink-0 p-1 -m-1 rounded-lg text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/60 transition"
       >
         <X className="w-3.5 h-3.5" />
       </button>
